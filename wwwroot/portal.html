@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="color-scheme" content="dark">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>GymPro — My Portal</title>
+    <style>
+        :root {
+            --bg: #090b10;
+            --s1: #0f1219;
+            --s2: #151a25;
+            --s3: #1c2230;
+            --brd: rgba(255,255,255,.07);
+            --brd2: rgba(255,255,255,.12);
+            --txt: #dde3f0;
+            --txt2: #8892aa;
+            --txt3: #545e74;
+            --acc: #e8621a;
+            --acc2: #f0783a;
+            --glow: rgba(232,98,26,.16);
+            --grn: #1db97a;
+            --grn-bg: rgba(29,185,122,.12);
+            --red: #e84848;
+            --red-bg: rgba(232,72,72,.12);
+            --blu: #4088f4;
+            --blu-bg: rgba(64,136,244,.12);
+            --pur: #9d6bf5;
+            --pur-bg: rgba(157,107,245,.12);
+            --amb: #f5a623;
+            --amb-bg: rgba(245,166,35,.12)
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0
+        }
+
+        html {
+            background: #090b10
+        }
+
+        body {
+            font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+            background: var(--bg);
+            color: var(--txt);
+            min-height: 100vh;
+            font-size: 14px
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none
+        }
+
+        button, input, select, textarea {
+            font-family: inherit
+        }
+
+        .nav {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--s1);
+            border-bottom: 1px solid var(--brd);
+            padding: 0 28px;
+            height: 58px;
+            display: flex;
+            align-items: center;
+            gap: 18px
+        }
+
+        .nav-logo {
+            font-family: 'Segoe UI',system-ui,sans-serif;
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            color: var(--txt)
+        }
+
+            .nav-logo span {
+                color: var(--acc)
+            }
+
+        .nav-back {
+            font-size: 12.5px;
+            color: var(--txt3);
+            transition: color .15s
+        }
+
+            .nav-back:hover {
+                color: var(--txt)
+            }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-left: auto
+        }
+
+        .av {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-weight: 700;
+            flex-shrink: 0;
+            background: var(--glow);
+            color: var(--acc)
+        }
+
+        .user-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--s2);
+            border: 1px solid var(--brd);
+            border-radius: 20px;
+            padding: 5px 12px 5px 5px
+        }
+
+        .up-name {
+            font-size: 12.5px;
+            font-weight: 500;
+            color: var(--txt)
+        }
+
+        .up-role {
+            font-size: 10.5px;
+            color: var(--acc)
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: var(--txt2);
+            border: 1px solid var(--brd2);
+            border-radius: 7px;
+            padding: 6px 13px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background .14s
+        }
+
+            .btn-ghost:hover {
+                background: var(--s2);
+                color: var(--txt)
+            }
+
+        .shell {
+            max-width: 1060px;
+            margin: 0 auto;
+            padding: 28px 20px
+        }
+
+        .page-title {
+            font-family: 'Segoe UI',system-ui,sans-serif;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: -.02em;
+            color: var(--txt);
+            margin-bottom: 3px
+        }
+
+        .page-sub {
+            font-size: 13px;
+            color: var(--txt3);
+            margin-bottom: 24px
+        }
+
+        .tabs {
+            display: flex;
+            gap: 3px;
+            background: var(--s2);
+            border-radius: 9px;
+            padding: 4px;
+            margin-bottom: 24px;
+            width: fit-content
+        }
+
+        .tab {
+            padding: 7px 16px;
+            border-radius: 6px;
+            font-size: 12.5px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--txt2);
+            border: none;
+            background: transparent;
+            transition: all .14s
+        }
+
+            .tab.active {
+                background: var(--s1);
+                color: var(--txt);
+                box-shadow: 0 1px 4px rgba(0,0,0,.3)
+            }
+
+        .g2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px
+        }
+
+        .g3 {
+            display: grid;
+            grid-template-columns: repeat(3,1fr);
+            gap: 12px
+        }
+
+        .g-auto {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(260px,1fr));
+            gap: 14px
+        }
+
+        .card {
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: 12px;
+            padding: 18px 20px
+        }
+
+        .card-title {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--txt);
+            margin-bottom: 3px
+        }
+
+        .card-sub {
+            font-size: 11.5px;
+            color: var(--txt3);
+            margin-bottom: 14px
+        }
+
+        .stat-card {
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: 12px;
+            padding: 16px 18px
+        }
+
+        .stat-val {
+            font-family: 'Segoe UI',system-ui,sans-serif;
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--txt);
+            margin: 5px 0 2px
+        }
+
+        .stat-lbl {
+            font-size: 11px;
+            color: var(--txt3)
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 9px;
+            border-radius: 20px;
+            font-size: 10.5px;
+            font-weight: 600
+        }
+
+        .b-grn {
+            background: var(--grn-bg);
+            color: var(--grn)
+        }
+
+        .b-red {
+            background: var(--red-bg);
+            color: var(--red)
+        }
+
+        .b-blu {
+            background: var(--blu-bg);
+            color: var(--blu)
+        }
+
+        .b-pur {
+            background: var(--pur-bg);
+            color: var(--pur)
+        }
+
+        .b-muted {
+            background: var(--s3);
+            color: var(--txt3)
+        }
+
+        .memb-card {
+            background: linear-gradient(135deg,var(--s3),var(--s2));
+            border: 1px solid var(--brd2);
+            border-radius: 12px;
+            padding: 18px 22px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px
+        }
+
+        .mc-label {
+            font-size: 9.5px;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--txt3);
+            margin-bottom: 4px
+        }
+
+        .mc-type {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--txt)
+        }
+
+        .mc-dates {
+            font-size: 11px;
+            color: var(--txt3);
+            margin-top: 4px
+        }
+
+        .mc-price {
+            font-family: 'Segoe UI',system-ui,sans-serif;
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--txt)
+        }
+
+        .mc-bar {
+            width: 36px;
+            height: 3px;
+            background: var(--acc);
+            border-radius: 2px;
+            margin: 4px 0 0 auto
+        }
+
+        .course-card {
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: 12px;
+            padding: 16px;
+            cursor: pointer;
+            transition: border-color .15s,transform .15s
+        }
+
+            .course-card:hover {
+                border-color: var(--acc);
+                transform: translateY(-2px)
+            }
+
+        .cc-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px
+        }
+
+        .cc-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--txt);
+            margin-bottom: 3px
+        }
+
+        .cc-meta {
+            font-size: 11.5px;
+            color: var(--txt3);
+            margin-bottom: 8px
+        }
+
+        .cc-price {
+            font-family: 'Segoe UI',system-ui,sans-serif;
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--acc)
+        }
+
+        .prog {
+            height: 3px;
+            background: var(--brd2);
+            border-radius: 2px;
+            margin-top: 8px
+        }
+
+        .prog-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: var(--acc)
+        }
+
+        .plan-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill,minmax(200px,1fr));
+            gap: 14px;
+            margin-top: 8px
+        }
+
+        .plan-card {
+            background: var(--s1);
+            border: 1px solid var(--brd);
+            border-radius: 12px;
+            padding: 20px;
+            position: relative;
+            transition: border-color .15s
+        }
+
+            .plan-card.featured {
+                border-color: var(--acc);
+                background: var(--glow)
+            }
+
+        .plan-badge {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--acc);
+            color: white;
+            font-size: 9.5px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 20px;
+            white-space: nowrap
+        }
+
+        .plan-type {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+            color: var(--txt3);
+            margin-bottom: 7px
+        }
+
+        .plan-price {
+            font-family: 'Segoe UI',system-ui,sans-serif;
+            font-size: 30px;
+            font-weight: 800;
+            color: var(--txt);
+            line-height: 1;
+            margin-bottom: 4px
+        }
+
+        .plan-per {
+            font-size: 11px;
+            color: var(--txt3);
+            margin-bottom: 14px
+        }
+
+        .plan-btn {
+            width: 100%;
+            padding: 8px;
+            border-radius: 7px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: background .14s
+        }
+
+        .plan-btn-solid {
+            background: var(--acc);
+            color: white
+        }
+
+            .plan-btn-solid:hover {
+                background: var(--acc2)
+            }
+
+        .plan-btn-ghost {
+            background: transparent;
+            border: 1px solid var(--brd2);
+            color: var(--txt2)
+        }
+
+            .plan-btn-ghost:hover {
+                background: var(--s2)
+            }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12.5px
+        }
+
+        th {
+            text-align: left;
+            padding: 8px 10px;
+            color: var(--txt3);
+            font-size: 10.5px;
+            font-weight: 700;
+            border-bottom: 1px solid var(--brd);
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        td {
+            padding: 9px 10px;
+            color: var(--txt2);
+            border-bottom: 1px solid var(--brd)
+        }
+
+        tr:last-child td {
+            border-bottom: none
+        }
+
+        .form-group {
+            margin-bottom: 13px
+        }
+
+        .form-lbl {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 700;
+            color: var(--txt3);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: .06em
+        }
+
+        .form-input {
+            width: 100%;
+            background: var(--s2);
+            border: 1px solid var(--brd2);
+            border-radius: 7px;
+            padding: 8px 10px;
+            font-size: 12.5px;
+            color: var(--txt);
+            outline: none
+        }
+
+            .form-input:focus {
+                border-color: var(--acc)
+            }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,.65);
+            z-index: 200;
+            display: none;
+            align-items: center;
+            justify-content: center
+        }
+
+            .modal-overlay.open {
+                display: flex
+            }
+
+        .modal-box {
+            background: var(--s1);
+            border: 1px solid var(--brd2);
+            border-radius: 14px;
+            padding: 26px;
+            width: 400px;
+            max-width: 94vw
+        }
+
+        .modal-title {
+            font-family: 'Segoe UI',system-ui,sans-serif;
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--txt);
+            margin-bottom: 4px
+        }
+
+        .modal-sub {
+            font-size: 12px;
+            color: var(--txt3);
+            margin-bottom: 16px
+        }
+
+        .modal-foot {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 16px
+        }
+
+        .err-box {
+            background: var(--red-bg);
+            color: var(--red);
+            border: 1px solid rgba(232,72,72,.2);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 12px;
+            margin-bottom: 12px;
+            display: none
+        }
+
+        .btn-primary {
+            background: var(--acc);
+            color: white;
+            border: none;
+            border-radius: 7px;
+            padding: 8px 18px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer
+        }
+
+            .btn-primary:hover {
+                background: var(--acc2)
+            }
+
+        #toast-wrap {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+            pointer-events: none
+        }
+
+        .toast {
+            display: flex;
+            align-items: center;
+            gap: 9px;
+            background: var(--s1);
+            border: 1px solid var(--brd2);
+            border-radius: 9px;
+            padding: 10px 14px;
+            font-size: 12.5px;
+            color: var(--txt);
+            min-width: 190px;
+            pointer-events: auto
+        }
+
+        .toast-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 9px;
+            font-weight: 700;
+            flex-shrink: 0
+        }
+
+        .toast.ok .toast-icon {
+            background: var(--grn-bg);
+            color: var(--grn)
+        }
+
+        .toast.err .toast-icon {
+            background: var(--red-bg);
+            color: var(--red)
+        }
+
+        .toast.info .toast-icon {
+            background: var(--blu-bg);
+            color: var(--blu)
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <div class="nav-logo">Gym<span>Pro</span></div>
+        <a href="home.html" class="nav-back">← Back to site</a>
+        <div class="nav-right">
+            <div class="user-pill">
+                <div class="av" id="nav-av">—</div>
+                <div><div class="up-name" id="nav-name">Loading…</div><div class="up-role" id="nav-role">Member</div></div>
+            </div>
+            <button class="btn-ghost" onclick="logout()">Sign Out</button>
+        </div>
+    </nav>
+    <div class="shell">
+        <div class="page-title" id="welcome-title">Welcome back!</div>
+        <div class="page-sub">Manage your membership, browse courses, and track your activity.</div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('overview',this)">Overview</button>
+            <button class="tab" onclick="showTab('memberships',this)">Memberships</button>
+            <button class="tab" onclick="showTab('courses',this)">Courses</button>
+            <button class="tab" onclick="showTab('checkins',this)">Check-ins</button>
+            <button class="tab" onclick="showTab('profile',this)">Profile</button>
+        </div>
+        <div id="tab-overview">
+            <div class="g3" style="margin-bottom:16px">
+                <div class="stat-card"><div class="stat-lbl">Active Memberships</div><div class="stat-val" id="ov-memb">—</div></div>
+                <div class="stat-card"><div class="stat-lbl">Check-ins This Month</div><div class="stat-val" id="ov-ci">—</div></div>
+                <div class="stat-card"><div class="stat-lbl">Courses Enrolled</div><div class="stat-val" id="ov-courses">—</div></div>
+            </div>
+            <div class="g2">
+                <div class="card"><div class="card-title">My Active Membership</div><div class="card-sub">Your current plan</div><div id="ov-memb-detail"><div style="color:var(--txt3);font-size:13px;padding:10px 0">No active membership — <a href="#" onclick="showTab('memberships',document.querySelectorAll('.tab')[1]);return false" style="color:var(--acc)">browse plans →</a></div></div></div>
+                <div class="card"><div class="card-title">Recent Check-ins</div><div class="card-sub">Your last visits</div><div id="ov-ci-list"><div style="color:var(--txt3);font-size:13px;padding:10px 0">No check-ins recorded yet.</div></div></div>
+            </div>
+        </div>
+        <div id="tab-memberships" style="display:none">
+            <div class="card" style="margin-bottom:16px"><div class="card-title">My Memberships</div><div class="card-sub">All plans on your account</div><div id="my-memberships"><div style="color:var(--txt3);font-size:13px;padding:14px 0">Loading…</div></div></div>
+            <div class="card"><div class="card-title">Buy a New Plan</div><div class="card-sub">Renew or upgrade</div><div class="plan-grid" id="portal-plans"><div style="color:var(--txt3);font-size:12.5px;padding:12px 0">Loading plans…</div></div></div>
+        </div>
+        <div id="tab-courses" style="display:none">
+            <div class="card" style="margin-bottom:16px"><div class="card-title">My Enrollments</div><div class="card-sub">Courses you are enrolled in</div><div id="my-enrollments"><div style="color:var(--txt3);font-size:13px;padding:14px 0">Loading…</div></div></div>
+            <div class="card"><div class="card-title">Browse All Courses</div><div class="card-sub">Tap to enroll</div><div class="g-auto" id="all-courses" style="margin-top:12px"><div style="color:var(--txt3);font-size:12.5px">Loading…</div></div></div>
+        </div>
+        <div id="tab-checkins" style="display:none">
+            <div class="card">
+                <div class="card-title">Check-in History</div><div class="card-sub">Your last 30 days</div>
+                <table><thead><tr><th>Date</th><th>Time</th><th>Amount</th></tr></thead><tbody id="ci-tbody"><tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">Loading…</td></tr></tbody></table>
+            </div>
+        </div>
+        <div id="tab-profile" style="display:none">
+            <div class="card" style="max-width:460px">
+                <div class="card-title">My Profile</div><div class="card-sub">Your account details</div>
+                <div class="form-group"><label class="form-lbl">Full Name</label><input class="form-input" id="pf-name" readonly></div>
+                <div class="form-group"><label class="form-lbl">Email</label><input class="form-input" id="pf-email" readonly></div>
+                <div class="form-group"><label class="form-lbl">Phone</label><input class="form-input" id="pf-phone" readonly></div>
+                <div class="form-group"><label class="form-lbl">Date of Birth</label><input class="form-input" id="pf-dob" readonly></div>
+                <div class="form-group"><label class="form-lbl">Emergency Contact</label><input class="form-input" id="pf-emergency" readonly></div>
+                <div style="font-size:11.5px;color:var(--txt3);margin-top:6px">To update your details, contact staff at the front desk.</div>
+            </div>
+        </div>
+    </div>
+    <div class="modal-overlay" id="buy-modal" onclick="if(event.target===this)closeBuyModal()">
+        <div class="modal-box">
+            <div class="modal-title" id="buy-modal-title">Buy Membership</div>
+            <div class="modal-sub">Confirm your plan details</div>
+            <div class="err-box" id="buy-err"></div>
+            <div class="form-group"><label class="form-lbl">Plan Type</label><input class="form-input" id="buy-type" readonly></div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Price (USD)</label><input class="form-input" id="buy-price" type="number" step="0.01" min="0"></div>
+                <div class="form-group"><label class="form-lbl">Duration</label><select class="form-input" id="buy-duration" onchange="recalcBuyDates()"><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12" selected>1 Year</option></select></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Start Date</label><input class="form-input" id="buy-start" type="date"></div>
+                <div class="form-group"><label class="form-lbl">Expire Date</label><input class="form-input" id="buy-expire" type="date"></div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn-ghost" onclick="closeBuyModal()">Cancel</button>
+                <button class="btn-primary" id="buy-submit" onclick="confirmBuyPlan()">Confirm &amp; Pay</button>
+            </div>
+        </div>
+    </div>
+    <div id="toast-wrap"></div>
+    <script>
+const token=localStorage.getItem('gympro-token'),role=localStorage.getItem('gympro-role')||'',myName=localStorage.getItem('gympro-user')||'Member',myId=parseInt(localStorage.getItem('gympro-userid')||'0');
+// Defer redirect so page has time to render (avoids white flash)
+if(!token){ document.body.innerHTML='<div style="font-family:system-ui;padding:40px;color:#dde3f0;background:#090b10;min-height:100vh;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px"><div style="font-size:18px;font-weight:700">Please sign in</div><a href=\"index.html\" style="background:#e8621a;color:white;padding:10px 24px;border-radius:8px;text-decoration:none;font-size:14px">Sign In</a><a href=\"home.html\" style="color:#545e74;font-size:13px">← Back to site</a></div>'; }
+else if(role==='Admin'||role==='Staff'){ window.location.replace('app.html'); }
+const ini=n=>(n||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+document.getElementById('nav-av').textContent=ini(myName);
+document.getElementById('nav-name').textContent=myName;
+document.getElementById('nav-role').textContent=role||'Member';
+document.getElementById('welcome-title').textContent=`Welcome back, ${myName.split(' ')[0]}!`;
+const API=async(path,opts={})=>{const res=await fetch('/api'+path,{headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},...opts});if(res.status===401){localStorage.clear();location.href='index.html';throw new Error('Session expired');}const j=await res.json().catch(()=>({}));if(!res.ok)throw new Error(j.message||`HTTP ${res.status}`);return j.data??j;};
+const fmtDate=d=>{if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}catch{return d;}};
+const fmtTime=d=>{if(!d)return'—';try{return new Date(d).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}catch{return d;}};
+const fmtMoney=v=>'$'+Number(v||0).toFixed(2);
+function toast(msg,type='info',ms=3200){const w=document.getElementById('toast-wrap');const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`<div class="toast-icon">${{ok:'✓',err:'✕',info:'i'}[type]||'i'}</div><span>${msg}</span>`;w.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(14px)';setTimeout(()=>el.remove(),250);},ms);}
+function logout(){['gympro-token','gympro-role','gympro-user','gympro-userid','gympro-roleid'].forEach(k=>localStorage.removeItem(k));location.href='home.html';}
+function showTab(id,btn){document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).style.display='block';if(btn)btn.classList.add('active');({overview:loadOverview,memberships:loadMemberships,courses:loadCourses,checkins:loadCheckins,profile:loadProfile})[id]?.();}
+let _cid=null;
+async function getClientId(){
+  if(_cid) return _cid;
+  try {
+    // GET /api/members/me uses JWT claim — no Admin/Staff needed
+    const me = await API('/members/me');
+    if(me && me.clientId){ _cid=me.clientId; return _cid; }
+  } catch(e) {
+    console.warn('getClientId /me failed:', e.message);
+  }
+  return null;
+}
+async function loadOverview(){
+  const cid=await getClientId();
+  try{if(cid){const membs=await API(`/members/${cid}/memberships`);const active=(membs||[]).filter(m=>m.isActive);document.getElementById('ov-memb').textContent=active.length;if(active.length){const m=active[0];document.getElementById('ov-memb-detail').innerHTML=`<div class="memb-card"><div><div class="mc-label">GymPro Membership</div><div class="mc-type">${m.type||'—'}</div><div class="mc-dates">${fmtDate(m.startAt)} → ${fmtDate(m.expireAt)}</div><div style="margin-top:8px"><span class="badge b-grn">Active</span></div></div><div style="text-align:right"><div style="font-size:10px;color:var(--txt3);margin-bottom:2px">Paid</div><div class="mc-price">${fmtMoney(m.price)}</div><div class="mc-bar"></div></div></div>`;}else{document.getElementById('ov-memb-detail').innerHTML=`<div style="color:var(--txt3);font-size:13px;padding:10px 0">No active membership. <a href="#" onclick="showTab('memberships',document.querySelectorAll('.tab')[1]);return false" style="color:var(--acc)">Browse plans →</a></div>`;}}}catch(e){}
+  try{if(cid){const ci=await API(`/members/${cid}/checkins`);const arr=ci||[];const now=new Date();const tm=arr.filter(c=>{const d=new Date(c.checkinDate||0);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});document.getElementById('ov-ci').textContent=tm.length;if(arr.length){document.getElementById('ov-ci-list').innerHTML=arr.slice(0,5).map(c=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--brd);font-size:12.5px"><span style="color:var(--txt)">${fmtDate(c.checkinDate)}</span><span style="color:var(--txt3)">${fmtTime(c.checkinDate)}</span><span class="badge b-grn">✓</span></div>`).join('');}}}catch(e){}
+  try{if(cid){const enr=await API(`/enrollments?clientId=${cid}`);document.getElementById('ov-courses').textContent=(enr||[]).length;}}catch(e){document.getElementById('ov-courses').textContent='—';}
+}
+async function loadMemberships(){
+  const cid=await getClientId();
+  if(cid){try{const list=await API(`/members/${cid}/memberships`)||[];document.getElementById('my-memberships').innerHTML=list.length?list.map(m=>`<div class="memb-card"><div><div class="mc-label">GymPro Membership</div><div class="mc-type">${m.type||'—'}</div><div class="mc-dates">${fmtDate(m.startAt)} → ${fmtDate(m.expireAt)}</div><div style="margin-top:6px"><span class="badge ${m.isActive?'b-grn':'b-muted'}">${m.isActive?'Active':'Expired'}</span></div></div><div style="text-align:right"><div style="font-size:10px;color:var(--txt3);margin-bottom:2px">Amount</div><div class="mc-price">${fmtMoney(m.price)}</div><div class="mc-bar"></div></div></div>`).join(''):'<div style="color:var(--txt3);font-size:13px;padding:14px 0">No memberships yet. Buy a plan below.</div>';}catch(e){document.getElementById('my-memberships').innerHTML=`<div style="color:var(--red);font-size:12.5px;padding:10px 0">⚠ ${e.message}</div>`;}}
+  await loadPortalPlans();
+  const hash=location.hash.replace('#','');if(hash.startsWith('buy-')){const t=hash.replace('buy-','');const p={Monthly:29.99,Quarterly:79.99,Annual:249};if(p[t])openBuyModal(t,p[t]);location.hash='';}
+}
+async function loadPortalPlans(){try{const json=await(await fetch('/api/public/plans')).json();const plans=json.data||json||[];const FEAT=['Quarterly','Annual'];document.getElementById('portal-plans').innerHTML=plans.map(p=>{const type=p.type||'Plan';const price=Number(p.price||0);const feat=FEAT.includes(type);return`<div class="plan-card${feat?' featured':''}"><div class="plan-badge" style="display:${feat?'block':'none'}">POPULAR</div><div class="plan-type">${type}</div><div class="plan-price">$${Math.floor(price)}<span style="font-size:13px">.${String(price.toFixed(2)).split('.')[1]}</span></div><div class="plan-per">per period</div><button class="${feat?'plan-btn plan-btn-solid':'plan-btn plan-btn-ghost'}" onclick="openBuyModal('${type}',${price})">Buy ${type}</button></div>`;}).join('')||'<div style="color:var(--txt3)">No plans available.</div>';}catch(e){document.getElementById('portal-plans').innerHTML=`<div class="plan-card"><div class="plan-type">Monthly</div><div class="plan-price">$29</div><button class="plan-btn plan-btn-ghost" onclick="openBuyModal('Monthly',29.99)">Buy Monthly</button></div><div class="plan-card featured"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--acc);color:white;font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:20px">POPULAR</div><div class="plan-type">Quarterly</div><div class="plan-price">$79</div><button class="plan-btn plan-btn-solid" onclick="openBuyModal('Quarterly',79.99)">Buy Quarterly</button></div><div class="plan-card"><div class="plan-type">Annual</div><div class="plan-price">$249</div><button class="plan-btn plan-btn-ghost" onclick="openBuyModal('Annual',249)">Buy Annual</button></div>`;}}
+const PLAN_MO={Monthly:1,Quarterly:3,Annual:12};
+function openBuyModal(type,price){document.getElementById('buy-type').value=type;document.getElementById('buy-price').value=price.toFixed(2);const d=document.getElementById('buy-duration'),mo=PLAN_MO[type]||1;if(d)for(let i=0;i<d.options.length;i++)if(parseInt(d.options[i].value)===mo){d.selectedIndex=i;break;}recalcBuyDates();document.getElementById('buy-err').style.display='none';document.getElementById('buy-modal-title').textContent=`Buy ${type} Plan`;document.getElementById('buy-modal').classList.add('open');}
+function closeBuyModal(){document.getElementById('buy-modal').classList.remove('open');}
+function recalcBuyDates(){const t=new Date();t.setHours(0,0,0,0);const mo=parseInt(document.getElementById('buy-duration')?.value||'1');const e=new Date(t);e.setMonth(e.getMonth()+mo);document.getElementById('buy-start').value=t.toISOString().split('T')[0];document.getElementById('buy-expire').value=e.toISOString().split('T')[0];}
+async function confirmBuyPlan(){const cid=await getClientId();const errEl=document.getElementById('buy-err');errEl.style.display='none';if(!cid){errEl.textContent='Could not find your member account. Contact staff.';errEl.style.display='block';return;}const body={clientId:cid,type:document.getElementById('buy-type').value,price:parseFloat(document.getElementById('buy-price').value)||0,startAt:new Date(document.getElementById('buy-start').value).toISOString(),expireAt:new Date(document.getElementById('buy-expire').value).toISOString()};const btn=document.getElementById('buy-submit');btn.disabled=true;btn.textContent='Processing…';try{await API('/memberships',{method:'POST',body:JSON.stringify(body)});toast('Membership purchased! ✓','ok');closeBuyModal();loadMemberships();loadOverview();}catch(e){errEl.textContent=e.message;errEl.style.display='block';}finally{btn.disabled=false;btn.textContent='Confirm & Pay';}}
+async function loadCourses(){const cid=await getClientId();const CC=[['rgba(232,98,26,.15)','#e8621a'],['rgba(64,136,244,.15)','#4088f4'],['rgba(157,107,245,.15)','#9d6bf5'],['rgba(29,185,122,.15)','#1db97a']];try{if(cid){const enr=await API(`/enrollments?clientId=${cid}`)||[];document.getElementById('my-enrollments').innerHTML=enr.length?`<table><thead><tr><th>Course</th><th>Start</th><th>Expires</th><th>Paid</th></tr></thead><tbody>${enr.map(e=>`<tr><td style="color:var(--txt);font-weight:500">${e.courseName||'—'}</td><td>${fmtDate(e.startAt)}</td><td>${fmtDate(e.expireAt)}</td><td>${fmtMoney(e.amount)}</td></tr>`).join('')}</tbody></table>`:'<div style="color:var(--txt3);font-size:13px;padding:14px 0">Not enrolled in any courses yet. Browse below.</div>';}}catch(e){document.getElementById('my-enrollments').innerHTML=`<div style="color:var(--red);font-size:12.5px;padding:10px 0">⚠ ${e.message}</div>`;}
+try{const json=await(await fetch('/api/public/courses')).json();const courses=json.data||json||[];document.getElementById('all-courses').innerHTML=courses.length?courses.map((c,i)=>{const[bg,fg]=CC[i%CC.length];const pct=Math.min(100,Math.round((c.enrollmentCount||0)/20*100));return`<div class="course-card" onclick="enrollCourse(${c.courseId},'${(c.courseName||'').replace(/'/g,"\'")}',${c.price})"><div class="cc-icon" style="background:${bg};color:${fg}"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></div><div class="cc-name">${c.courseName}</div><div class="cc-meta">${c.trainerName||'—'} · ${c.skillName||'—'}</div><div style="display:flex;align-items:center;justify-content:space-between"><div class="cc-price">${fmtMoney(c.price)}</div><span class="badge b-pur" style="font-size:10px">${c.enrollmentCount||0}/20</span></div><div class="prog"><div class="prog-fill" style="width:${pct}%;background:${fg}"></div></div></div>`;}).join(''):'<div style="color:var(--txt3);font-size:13px">No courses available.</div>';}catch(e){document.getElementById('all-courses').innerHTML=`<div style="color:var(--red);font-size:12.5px">⚠ ${e.message}</div>`;}}
+async function enrollCourse(cid2,name,price){const cid=await getClientId();if(!cid){toast('Member account not found','err');return;}if(!confirm(`Enroll in "${name}" for ${fmtMoney(price)}?`))return;const t=new Date();t.setHours(0,0,0,0);const e=new Date(t);e.setMonth(e.getMonth()+3);try{await API('/enrollments',{method:'POST',body:JSON.stringify({courseId:cid2,clientId:cid,amount:price,startAt:t.toISOString(),expireAt:e.toISOString()})});toast(`Enrolled in ${name} ✓`,'ok');loadCourses();loadOverview();}catch(e){toast(e.message,'err');}}
+async function loadCheckins(){const cid=await getClientId();if(!cid){document.getElementById('ci-tbody').innerHTML='<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">Member record not found.</td></tr>';return;}try{const list=await API(`/members/${cid}/checkins?days=30`)||[];document.getElementById('ci-tbody').innerHTML=list.length?list.map(c=>`<tr><td style="color:var(--txt)">${fmtDate(c.checkinDate)}</td><td style="color:var(--txt2)">${fmtTime(c.checkinDate)}</td><td>${fmtMoney(c.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">No check-ins in the last 30 days.</td></tr>';}catch(e){document.getElementById('ci-tbody').innerHTML=`<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--red)">⚠ ${e.message}</td></tr>`;}}
+async function loadProfile(){const cid=await getClientId();if(!cid)return;try{const m=await API(`/members/${cid}`);if(!m)return;document.getElementById('pf-name').value=m.fullName||'';document.getElementById('pf-email').value=m.email||'';document.getElementById('pf-phone').value=m.phone||'';document.getElementById('pf-dob').value=m.dob?m.dob.split('T')[0]:'';document.getElementById('pf-emergency').value=m.emergencyContact||'';}catch(e){toast('Could not load profile','err');}}
+loadOverview();
+    </script>
+
+    <div id="err-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#e84848;color:white;padding:12px 20px;font-size:13px;font-family:monospace;word-break:break-all"></div>
+    <script>
+window.addEventListener('error',function(e){
+  var b=document.getElementById('err-banner');
+  if(b){b.style.display='block';b.textContent='JS Error: '+e.message+' (line '+e.lineno+')';}
+});
+    </script>
+</body>
+</html>

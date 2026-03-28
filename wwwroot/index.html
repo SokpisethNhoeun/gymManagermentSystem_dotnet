@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<title>GymPro — Sign In</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{background:#090b10}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#090b10;color:#dde3f0;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{width:360px;background:#0f1219;border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:36px 32px}
+.logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.logo-icon{width:34px;height:34px;background:#e8621a;border-radius:8px;display:flex;align-items:center;justify-content:center}
+.logo-icon svg{width:17px;height:17px;fill:white}
+.logo-text{font-size:20px;font-weight:800;letter-spacing:-.02em}
+.logo-text span{color:#e8621a}
+h1{font-size:20px;font-weight:700;margin-bottom:6px}
+.sub{font-size:13px;color:#545e74;margin-bottom:24px}
+label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#545e74;margin-bottom:5px}
+input{width:100%;background:#151a25;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;font-size:13.5px;color:#dde3f0;outline:none;font-family:inherit;margin-bottom:14px}
+input:focus{border-color:#e8621a;box-shadow:0 0 0 3px rgba(232,98,26,.15)}
+.btn{width:100%;background:#e8621a;color:white;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+.btn:hover{background:#f0783a}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.err{display:none;background:rgba(232,72,72,.12);color:#e84848;border:1px solid rgba(232,72,72,.2);border-radius:7px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
+.footer{text-align:center;margin-top:20px;font-size:11.5px;color:#545e74}
+.footer a{color:#e8621a;text-decoration:none}
+.home-link{display:block;text-align:center;margin-top:10px;font-size:12px;color:#545e74;text-decoration:none}
+.home-link:hover{color:#e8621a}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></div>
+    <div class="logo-text">Gym<span>Pro</span></div>
+  </div>
+  <h1>Welcome back</h1>
+  <p class="sub">Sign in to your account</p>
+
+  <div class="err" id="err"></div>
+
+  <label>Username</label>
+  <input type="text" id="username" placeholder="admin" autocomplete="username">
+
+  <label>Password</label>
+  <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+
+  <button class="btn" id="btn" onclick="doLogin()">
+    <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+    Sign In
+  </button>
+
+  <div class="footer">Default: admin / Admin@123</div>
+  <a class="home-link" href="home.html">← View public site</a>
+</div>
+
+<script>
+document.addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+
+async function doLogin() {
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value;
+  const btn = document.getElementById('btn');
+  const err = document.getElementById('err');
+  err.style.display = 'none';
+  if (!u || !p) { showErr('Enter username and password.'); return; }
+
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  try {
+    const res  = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: u, password: p })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.message || json.Message || 'Invalid credentials.');
+
+    // ApiResponse<LoginResponse> → { success, message, data: { token, userId, fullName, email, role, roleId } }
+    const d = json.data || json;
+    const token = d.token || d.Token;
+    if (!token) throw new Error('No token in response — check API.');
+
+    // Persist all fields
+    localStorage.setItem('gympro-token',  token);
+    localStorage.setItem('gympro-user',   d.fullName  || d.FullName  || u);
+    localStorage.setItem('gympro-role',   d.role      || d.Role      || '');
+    localStorage.setItem('gympro-userid', String(d.userId  || d.UserId  || 0));
+    localStorage.setItem('gympro-roleid', String(d.roleId  || d.RoleId  || 0));
+
+    // Role-based redirect — case-insensitive
+    const role = (d.role || d.Role || '').trim().toLowerCase();
+    if (role === 'client' || role === 'trainer') {
+      window.location.replace('portal.html');
+    } else {
+      // Admin, Staff → management dashboard
+      window.location.replace('app.html');
+    }
+  } catch(e) {
+    const msg = e.message === 'Failed to fetch'
+      ? 'Cannot reach API — is dotnet running on port 5000?'
+      : e.message;
+    showErr(msg);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Sign In';
+  }
+}
+
+function showErr(msg) { const e = document.getElementById('err'); e.textContent = msg; e.style.display = 'block'; }
+</script>
+</body>
+</html>

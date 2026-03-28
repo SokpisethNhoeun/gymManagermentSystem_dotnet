@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>GymPro — Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&display=swap">
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/main.css">
+    <!-- Auth guard — redirect to login immediately if no token -->
+    <script>
+        (function () {
+            var t = localStorage.getItem('gympro-token');
+            var r = localStorage.getItem('gympro-role') || '';
+            if (!t) { window.location.replace('index.html'); }
+            else if (r.toLowerCase() === 'client' || r.toLowerCase() === 'trainer') { window.location.replace('portal.html'); }
+            // Apply theme before paint to avoid flash
+            var m = localStorage.getItem('gympro-theme') || 'dark';
+            if (m === 'light') document.documentElement.classList.add('light');
+        })();
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+    <div id="app">
+
+        <!-- ═══════════════ SIDEBAR ═══════════════ -->
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z" /></svg></div>
+                <div class="logo-text">Gym<span>Pro</span></div>
+                <span class="logo-ver">v2.0</span>
+            </div>
+            <nav class="sidebar-nav">
+                <div class="nav-sec">
+                    <div class="nav-lbl">Overview</div>
+                    <button class="nav-item" data-page="dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>Dashboard</button>
+                    <button class="nav-item" data-page="analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></svg>Analytics<span class="nav-badge new">New</span></button>
+                </div>
+                <div class="nav-sec">
+                    <div class="nav-lbl">People</div>
+                    <button class="nav-item" data-page="members"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" /></svg>Members<span class="nav-badge" id="nav-member-count">—</span></button>
+                    <button class="nav-item" data-page="trainers"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="8" r="4" /><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg>Trainers</button>
+                    <button class="nav-item" data-page="staff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>Staff</button>
+                </div>
+                <div class="nav-sec">
+                    <div class="nav-lbl">Operations</div>
+                    <button class="nav-item" data-page="checkins"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>Check-ins<span class="nav-badge" id="nav-ci-count">—</span></button>
+                    <button class="nav-item" data-page="courses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>Courses</button>
+                    <button class="nav-item" data-page="memberships"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg>Memberships</button>
+                </div>
+                <div class="nav-sec">
+                    <div class="nav-lbl">Finance</div>
+                    <button class="nav-item" data-page="payments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></svg>Payments</button>
+                </div>
+                <div class="nav-sec">
+                    <div class="nav-lbl">System</div>
+                    <button class="nav-item" data-page="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>Settings</button>
+                    <button class="nav-item" data-page="auditlog"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><polyline points="14 2 14 8 20 8" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></svg>Audit Log</button>
+                </div>
+            </nav>
+            <div class="sidebar-foot">
+                <div class="user-tile">
+                    <div class="av" id="sidebar-av" style="background:linear-gradient(135deg,var(--accent),var(--purple));color:white;font-size:10px;font-weight:700">AD</div>
+                    <div style="flex:1;min-width:0"><div class="user-name" id="sidebar-name">Admin User</div><div class="user-role" id="sidebar-role">Administrator</div></div>
+                    <div class="online-dot"></div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ═══════════════ MAIN ═══════════════ -->
+        <div class="main">
+            <div class="topbar">
+                <div class="breadcrumb"><span>GymPro</span><span class="bc-sep">/</span><span class="cur" id="bread-cur">Dashboard</span></div>
+                <div class="top-search" style="margin-left:16px">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                    <input type="text" id="global-search" placeholder="Search members, trainers…">
+                    <span class="kbd">⌘K</span>
+                </div>
+                <div class="top-actions">
+                    <button class="theme-btn" id="theme-btn" title="Toggle theme">
+                        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /></svg>
+                        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+                    </button>
+                    <button class="icon-btn" id="notif-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg><span class="notif-dot"></span></button>
+                    <button class="btn btn-primary" id="topbar-btn" style="display:none">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+                        <span id="topbar-btn-label">Add Member</span>
+                    </button>
+                    <button class="btn btn-ghost btn-sm" onclick="Api.logout()">Sign Out</button>
+                </div>
+            </div>
+
+            <div class="content">
+
+                <!-- ══ DASHBOARD ══ -->
+                <div class="page" id="page-dashboard">
+                    <div class="g4 mb20">
+                        <div class="stat-card" style="--clr:var(--accent)">
+                            <div class="stat-top"><div class="stat-icon" style="background:var(--glow);color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg></div><div class="sparkline" style="width:50px"><div class="spark-bar" style="height:40%"></div><div class="spark-bar" style="height:55%"></div><div class="spark-bar" style="height:65%"></div><div class="spark-bar" style="height:70%"></div><div class="spark-bar" style="height:80%"></div><div class="spark-bar" style="height:88%"></div><div class="spark-bar" style="height:100%;opacity:1"></div></div></div>
+                            <div class="stat-val" id="stat-members">—</div><div class="stat-lbl">Total Members</div>
+                            <div class="stat-delta"><span class="badge b-green" style="font-size:10px">↑ 12%</span><span class="text-muted" style="font-size:11px">vs last month</span></div>
+                        </div>
+                        <div class="stat-card" style="--clr:var(--green)">
+                            <div class="stat-top"><div class="stat-icon" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></div><span class="badge b-green badge-dot">Live</span></div>
+                            <div class="stat-val" id="stat-checkins">—</div><div class="stat-lbl">Today's Check-ins</div>
+                            <div class="stat-delta"><span class="badge b-green" style="font-size:10px">Live</span></div>
+                        </div>
+                        <div class="stat-card" style="--clr:var(--blue)">
+                            <div class="stat-top"><div class="stat-icon" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px"><circle cx="12" cy="8" r="4" /><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg></div></div>
+                            <div class="stat-val" id="stat-trainers">—</div><div class="stat-lbl">Active Trainers</div>
+                        </div>
+                        <div class="stat-card" style="--clr:var(--purple)">
+                            <div class="stat-top"><div class="stat-icon" style="background:var(--purple-bg);color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg></div></div>
+                            <div class="stat-val" id="stat-memb">—</div><div class="stat-lbl">Active Memberships</div>
+                        </div>
+                    </div>
+                    <div class="g-7-3 mb16">
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">Revenue Overview</div><div class="card-sub">Monthly — last 8 months</div></div></div>
+                            <div class="chart-box h240"><canvas id="chart-revenue"></canvas></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title">Membership Split</div></div>
+                            <div class="chart-box h240"><canvas id="chart-donut"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="g2">
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">Recent Members</div><div class="card-sub">Click to view profile</div></div><button class="btn btn-ghost btn-sm" onclick="navigate('members')">View all</button></div>
+                            <table><thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Phone</th></tr></thead><tbody id="dash-members-tbody"><tr><td colspan="4"><div class="skeleton" style="height:12px;margin:8px 0"></div></td></tr></tbody></table>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title">Live Check-ins</div><span class="badge b-green badge-dot">Live</span></div>
+                            <div id="live-checkins"><div class="skeleton" style="height:44px;margin-bottom:8px"></div><div class="skeleton" style="height:44px;margin-bottom:8px"></div><div class="skeleton" style="height:44px"></div></div>
+                        </div>
+                    </div>
+                    <div class="g2" style="margin-top:16px">
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">Recent Course Enrollments</div><div class="card-sub">Latest enrollment requests</div></div><button class="btn btn-ghost btn-sm" onclick="navigate('courses')">View all</button></div>
+                            <table><thead><tr><th>Member</th><th>Course</th><th>Date</th><th>Status</th></tr></thead><tbody id="dash-enrollments-tbody"><tr><td colspan="4"><div class="skeleton" style="height:12px;margin:8px 0"></div></td></tr></tbody></table>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">Pending Approvals</div><div class="card-sub">Course enrollments awaiting approval</div></div><span class="badge b-amber" id="pending-count-badge" style="display:none">0</span></div>
+                            <div id="pending-approvals-list"><div class="skeleton" style="height:44px;margin-bottom:8px"></div><div class="skeleton" style="height:44px"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ ANALYTICS ══ -->
+                <div class="page" id="page-analytics">
+                    <div class="kpi-strip">
+                        <div class="kpi-item"><div class="kpi-lbl">Revenue YTD</div><div class="kpi-val text-green" id="kpi-ytd">—</div><div class="kpi-sub">From memberships</div></div>
+                        <div class="kpi-item"><div class="kpi-lbl">Avg Rev / Member</div><div class="kpi-val" id="kpi-avg-rev">—</div><div class="kpi-sub">Monthly avg</div></div>
+                        <div class="kpi-item"><div class="kpi-lbl">Inactive Rate</div><div class="kpi-val text-red" id="kpi-churn">—</div><div class="kpi-sub">Without active plan</div></div>
+                        <div class="kpi-item"><div class="kpi-lbl">Check-ins / Member</div><div class="kpi-val" id="kpi-ci-per-member">—</div><div class="kpi-sub">Today</div></div>
+                        <div class="kpi-item"><div class="kpi-lbl">Course Fill Rate</div><div class="kpi-val text-accent" id="kpi-fill-rate">—</div><div class="kpi-sub">All active courses</div></div>
+                    </div>
+                    <div class="g2 mb16">
+                        <div class="card"><div class="card-header"><div><div class="card-title">Member Growth</div><div class="card-sub">New registrations per month</div></div></div><div class="chart-box h280"><canvas id="chart-growth"></canvas></div></div>
+                        <div class="card"><div class="card-header"><div><div class="card-title">Check-in Heatmap</div><div class="card-sub">Visits by hour of day</div></div></div><div class="chart-box h280"><canvas id="chart-heatmap"></canvas></div></div>
+                    </div>
+                    <div class="g2">
+                        <div class="card"><div class="card-header"><div class="card-title">Revenue by Plan</div></div><div class="chart-box h240"><canvas id="chart-plan-rev"></canvas></div></div>
+                        <div class="card"><div class="card-header"><div class="card-title">Peak Hours</div><div class="card-sub">This week</div></div><div class="chart-box h240"><canvas id="chart-hours"></canvas></div></div>
+                    </div>
+                </div>
+
+                <!-- ══ MEMBERS ══ -->
+                <div class="page" id="page-members">
+                    <div class="flex gap8 mb16">
+                        <div class="top-search" style="max-width:280px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg><input type="text" placeholder="Search members…" oninput="filterMembers(this.value)"></div>
+                        <select class="form-input" style="width:auto" onchange="filterMemberStatus(this.value)"><option value="">All Status</option><option>Active</option><option>Inactive</option></select>
+                        <div class="ml-auto flex gap8">
+                            <button class="btn btn-ghost btn-sm" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></svg>Export</button>
+                            <button class="btn btn-primary btn-sm" onclick="openMemberModal()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>Add Member</button>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Name</th><th>ID</th><th>Phone</th><th>Status</th><th>DOB</th><th></th></tr></thead>
+                                <tbody id="members-tbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Loading…</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ TRAINERS ══ -->
+                <div class="page" id="page-trainers">
+                    <div class="flex gap8 mb16 ml-auto" style="justify-content:flex-end">
+                        <button class="btn btn-primary btn-sm" onclick="openOverlay('modal-overlay','trainer-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>Add Trainer</button>
+                    </div>
+                    <div class="g3" id="trainers-grid"><div class="text-muted" style="padding:32px;text-align:center;grid-column:1/-1">Loading…</div></div>
+                </div>
+
+                <!-- ══ STAFF ══ -->
+                <div class="page" id="page-staff">
+                    <div class="card">
+                        <div class="card-header">
+                            <div><div class="card-title">Staff Directory</div><div class="card-sub">Manage staff accounts and roles</div></div>
+                            <button class="btn btn-primary btn-sm" onclick="openOverlay('modal-overlay','staff-modal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>Add Staff</button>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Name</th><th>Phone</th><th>Status</th><th>Email</th><th>Salary</th></tr></thead>
+                                <tbody id="staff-tbody"><tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text3)">Loading…</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ CHECK-INS ══ -->
+                <div class="page" id="page-checkins">
+                    <div class="g3 mb20" style="grid-template-columns:repeat(3,1fr)">
+                        <div class="stat-card" style="--clr:var(--green)"><div class="stat-val" id="stat-ci-today">—</div><div class="stat-lbl">Today's Check-ins</div></div>
+                        <div class="stat-card" style="--clr:var(--blue)"><div class="stat-val">174</div><div class="stat-lbl">This Week</div></div>
+                        <div class="stat-card" style="--clr:var(--accent)"><div class="stat-val">692</div><div class="stat-lbl">This Month</div></div>
+                    </div>
+                    <div class="g-6-4">
+                        <div class="card">
+                            <div class="card-header">
+                                <div><div class="card-title">Today's Check-ins</div><div class="card-sub">From GET /api/checkins</div></div>
+                                <button class="btn btn-primary btn-sm" onclick="openCheckInModal()">Manual Check-in</button>
+                            </div>
+                            <div class="table-wrap">
+                                <table>
+                                    <thead><tr><th>Member</th><th>Time</th><th>Method</th><th>Duration</th></tr></thead>
+                                    <tbody id="checkins-tbody"><tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text3)">Loading…</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title">Check-in Methods</div></div>
+                            <div class="chart-box h200"><canvas id="chart-ci-methods"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <!-- ══ COURSES ══ -->
+                <div class="page" id="page-courses">
+                    <div class="flex gap8 mb16" style="justify-content:flex-end">
+                        <button class="btn btn-primary btn-sm" onclick="openCourseModal()">+ New Course</button>
+                    </div>
+                    <div class="g2">
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">Active Courses</div><div class="card-sub">From GET /api/courses</div></div></div>
+                            <div id="courses-list"><div class="skeleton" style="height:72px;margin-bottom:8px"></div><div class="skeleton" style="height:72px;margin-bottom:8px"></div><div class="skeleton" style="height:72px"></div></div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title">Enrollment Stats</div></div>
+                            <div class="chart-box h280"><canvas id="chart-courses-enroll"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ MEMBERSHIPS ══ -->
+                <div class="page" id="page-memberships">
+                    <div class="card">
+                        <div class="card-header">
+                            <div><div class="card-title">Membership Plans</div><div class="card-sub">From GET /api/memberships</div></div>
+                            <button class="btn btn-primary btn-sm" onclick="openMembModal()">+ New Plan</button>
+                        </div>
+                        <!-- Plan Definitions Card -->
+                        <div class="card" style="margin-bottom:16px">
+                            <div class="card-header"><div><div class="card-title">Membership Plans</div><div class="card-sub">Plans shown on the public website</div></div><button class="btn btn-primary btn-sm" onclick="openPlanModal()">+ Add Plan</button></div>
+                            <div id="plans-list" style="display:flex;flex-wrap:wrap;gap:12px;padding:8px 0"><div class="text-muted" style="font-size:12px;padding:12px">Loading plans…</div></div>
+                        </div>
+
+                        <div class="table-wrap">
+                            <table>
+                                <thead><tr><th>Member</th><th>Type</th><th>Price</th><th>Start Date</th><th>Status</th><th></th></tr></thead>
+                                <tbody id="memb-tbody"><tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Loading…</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ PAYMENTS ══ -->
+                <div class="page" id="page-payments">
+                    <div class="g4 mb20">
+                        <div class="stat-card" style="--clr:var(--green)"><div class="stat-val text-green" id="pay-stat-month">—</div><div class="stat-lbl">This Month</div></div>
+                        <div class="stat-card" style="--clr:var(--blue)"><div class="stat-val" id="pay-stat-ytd">—</div><div class="stat-lbl">YTD Revenue</div></div>
+                        <div class="stat-card" style="--clr:var(--purple)"><div class="stat-val" id="pay-stat-active">—</div><div class="stat-lbl">Active Plans</div></div>
+                        <div class="stat-card" style="--clr:var(--accent)"><div class="stat-val" id="pay-stat-members">—</div><div class="stat-lbl">Total Members</div></div>
+                    </div>
+                    <div class="g-7-3">
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">Transactions</div><div class="card-sub">Add a /api/payments endpoint to load real data</div></div><button class="btn btn-ghost btn-sm" onclick="toast('Exporting…','info')">Export</button></div>
+                            <div class="table-wrap">
+                                <table>
+                                    <thead><tr><th>Member</th><th>Plan</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
+                                    <tbody>
+                                        <tr><td>Sophea Kem</td><td>Annual</td><td class="fw6">$249.00</td><td class="text-muted">Mar 5, 2025</td><td><span class="badge b-green badge-dot">Paid</span></td></tr>
+                                        <tr><td>Dara Chan</td><td>Monthly</td><td class="fw6">$29.99</td><td class="text-muted">Mar 1, 2025</td><td><span class="badge b-green badge-dot">Paid</span></td></tr>
+                                        <tr><td>Raksmey Sok</td><td>Quarterly</td><td class="fw6">$79.99</td><td class="text-muted">Feb 20, 2025</td><td><span class="badge b-amber">Pending</span></td></tr>
+                                        <tr><td>Pisey Lim</td><td>Monthly</td><td class="fw6">$29.99</td><td class="text-muted">Feb 10, 2025</td><td><span class="badge b-red">Overdue</span></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div class="card-title">Revenue Split</div></div>
+                            <div class="chart-box h200"><canvas id="chart-pay-split"></canvas></div>
+                            <div class="divider"></div>
+                            <div class="card-header" style="margin-bottom:0"><div><div class="card-title">Monthly Trend</div></div></div>
+                            <div class="chart-box h160" style="margin-top:12px"><canvas id="chart-rev-trend"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ SETTINGS ══ -->
+                <div class="page" id="page-settings">
+                    <div class="g-settings">
+                        <div class="settings-sidenav">
+                            <button class="sn-item" onclick="settingsNav('general',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:13px;height:13px"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4" /></svg>General</button>
+                            <button class="sn-item" onclick="settingsNav('database',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:13px;height:13px"><ellipse cx="12" cy="5" rx="9" ry="3" /><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3" /><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5" /></svg>Database</button>
+                            <button class="sn-item" onclick="settingsNav('security',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:13px;height:13px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>Security & JWT</button>
+                            <button class="sn-item" onclick="settingsNav('notifications',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:13px;height:13px"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>Notifications</button>
+                            <button class="sn-item" onclick="settingsNav('api',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:13px;height:13px"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>API & Rate Limits</button>
+                            <button class="sn-item" onclick="settingsNav('roles',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:13px;height:13px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="M9 12l2 2 4-4" /></svg>Roles & Access</button>
+                            <button class="sn-item" onclick="settingsNav('accounts',this);loadAccountsPanel()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:13px;height:13px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><line x1="19" y1="8" x2="19" y2="14" /><line x1="22" y1="11" x2="16" y2="11" /></svg>Accounts</button>
+                            <div class="sn-sep"></div>
+                            <button class="sn-item" onclick="settingsNav('danger',this)" style="color:var(--red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" style="width:13px;height:13px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /></svg>Danger Zone</button>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:16px">
+
+                            <!-- General -->
+                            <div class="s-panel active" id="sp-general">
+                                <div class="card">
+                                    <div class="card-header"><div><div class="card-title">Gym Information</div><div class="card-sub">Public-facing details</div></div></div>
+                                    <div class="form-grid"><div class="form-group"><label class="form-lbl">Gym Name</label><input class="form-input" value="GymPro Fitness Center"></div><div class="form-group"><label class="form-lbl">Phone</label><input class="form-input" value="+855 23 456 789"></div></div>
+                                    <div class="form-group"><label class="form-lbl">Address</label><input class="form-input" value="123 Norodom Blvd, Phnom Penh, Cambodia"></div>
+                                    <div class="form-grid"><div class="form-group"><label class="form-lbl">Email</label><input class="form-input" value="admin@gympro.kh"></div><div class="form-group"><label class="form-lbl">Website</label><input class="form-input" value="https://gympro.kh"></div></div>
+                                    <div class="form-grid"><div class="form-group"><label class="form-lbl">Opens</label><input class="form-input" type="time" value="05:00"></div><div class="form-group"><label class="form-lbl">Closes</label><input class="form-input" type="time" value="22:00"></div></div>
+                                    <button class="btn btn-primary" onclick="toast('Gym info saved','ok')">Save Changes</button>
+                                </div>
+                                <div class="card">
+                                    <div class="card-header"><div class="card-title">Locale & Currency</div></div>
+                                    <div class="form-grid"><div class="form-group"><label class="form-lbl">Currency</label><select class="form-input"><option>USD ($)</option><option>KHR</option></select></div><div class="form-group"><label class="form-lbl">Timezone</label><select class="form-input"><option>Asia/Phnom_Penh (GMT+7)</option><option>UTC</option></select></div><div class="form-group"><label class="form-lbl">Date Format</label><select class="form-input"><option>DD/MM/YYYY</option><option>MM/DD/YYYY</option></select></div><div class="form-group"><label class="form-lbl">Language</label><select class="form-input"><option>English</option><option>Khmer</option></select></div></div>
+                                    <button class="btn btn-primary" onclick="toast('Locale saved','ok')">Save</button>
+                                </div>
+                            </div>
+
+                            <!-- Database -->
+                            <div class="s-panel" id="sp-database">
+                                <div class="card">
+                                    <div class="card-header"><div><div class="card-title">SQL Server Connection</div><div class="card-sub">appsettings.json → DefaultConnection</div></div><span class="badge b-green badge-dot">Connected</span></div>
+                                    <div class="form-group"><label class="form-lbl">Server</label><input class="form-input" value="."></div>
+                                    <div class="form-grid"><div class="form-group"><label class="form-lbl">Database</label><input class="form-input" value="GymManagementDB"></div><div class="form-group"><label class="form-lbl">User ID</label><input class="form-input" value="sa"></div></div>
+                                    <div class="form-grid"><div class="form-group"><label class="form-lbl">Password</label><input class="form-input" type="password" value="admin"></div><div class="form-group"><label class="form-lbl">Timeout (sec)</label><input class="form-input" type="number" value="30"></div></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Trust Server Certificate</div><div class="toggle-desc">Allow self-signed SSL (dev only)</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Multiple Active Result Sets</div><div class="toggle-desc">Required for Entity Framework Core</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary" onclick="toast('Reconnecting…','ok')">Save & Reconnect</button><button class="btn btn-ghost" onclick="toast('Connection OK — 12ms','ok')">Test Connection</button></div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-header"><div><div class="card-title">Serilog Configuration</div></div></div>
+                                    <div class="form-grid"><div class="form-group"><label class="form-lbl">Min Log Level</label><select class="form-input"><option>Information</option><option>Warning</option><option>Debug</option></select></div><div class="form-group"><label class="form-lbl">Microsoft Override</label><select class="form-input"><option>Warning</option><option>Information</option></select></div><div class="form-group"><label class="form-lbl">Log File Path</label><input class="form-input" value="logs/gym-.log"></div><div class="form-group"><label class="form-lbl">Retain (days)</label><input class="form-input" type="number" value="30"></div></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Console Sink</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Rolling Daily Files</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div style="margin-top:14px"><button class="btn btn-primary" onclick="toast('Logging config saved','ok')">Save</button></div>
+                                </div>
+                            </div>
+
+                            <!-- Security -->
+                            <div class="s-panel" id="sp-security">
+                                <div class="card">
+                                    <div class="card-header"><div><div class="card-title">JWT Settings</div><div class="card-sub">appsettings.json → JwtSettings</div></div></div>
+                                    <div class="form-grid"><div class="form-group"><label class="form-lbl">Issuer</label><input class="form-input" value="GymManagementAPI"></div><div class="form-group"><label class="form-lbl">Audience</label><input class="form-input" value="GymManagementClient"></div><div class="form-group"><label class="form-lbl">Dev Expiry (min)</label><input class="form-input" type="number" value="480"><div class="form-hint">8 hours</div></div><div class="form-group"><label class="form-lbl">Prod Expiry (min)</label><input class="form-input" type="number" value="240"><div class="form-hint">4 hours</div></div></div>
+                                    <div class="form-group"><label class="form-lbl">Secret Key</label><div class="api-key-box"><span class="api-key-val" id="jwt-secret">GymProSuperSecretKey2024!@#$%^&*()</span><button class="copy-btn" onclick="regenJWT()">Regenerate</button></div><div class="form-hint" style="color:var(--amber)">⚠ Changing this invalidates all sessions</div></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Validate Issuer</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Validate Audience</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div style="margin-top:14px"><button class="btn btn-primary" onclick="toast('JWT config saved','ok')">Save</button></div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-header"><div><div class="card-title">CORS Origins</div></div></div>
+                                    <div id="cors-list" style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">
+                                        <div class="api-key-box"><span class="api-key-val">http://localhost:5000</span><button class="copy-btn" onclick="this.closest('.api-key-box').remove();toast('Removed','info')">Remove</button></div>
+                                        <div class="api-key-box"><span class="api-key-val">http://localhost:5500</span><button class="copy-btn" onclick="this.closest('.api-key-box').remove();toast('Removed','info')">Remove</button></div>
+                                        <div class="api-key-box"><span class="api-key-val">https://gympro.kh</span><button class="copy-btn" onclick="this.closest('.api-key-box').remove();toast('Removed','info')">Remove</button></div>
+                                    </div>
+                                    <div style="display:flex;gap:8px"><input class="form-input" type="text" placeholder="https://new-origin.com" id="cors-input" style="flex:1"><button class="btn btn-primary btn-sm" onclick="addCorsOrigin()">Add</button></div>
+                                </div>
+                            </div>
+
+                            <!-- Notifications -->
+                            <div class="s-panel" id="sp-notifications">
+                                <div class="card">
+                                    <div class="card-header"><div class="card-title">Email Notifications</div></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Membership Expiry Reminders</div><div class="toggle-desc">7 days before expiry</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Welcome Emails</div><div class="toggle-desc">Auto-send on new member registration</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Payment Receipts</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Overdue Payment Alerts</div><div class="toggle-desc">3+ days overdue</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Course Full Alerts</div></div><label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Weekly Summary Report</div><div class="toggle-desc">Every Monday 8:00 AM</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div style="margin-top:14px"><button class="btn btn-primary" onclick="toast('Notification settings saved','ok')">Save</button></div>
+                                </div>
+                            </div>
+
+                            <!-- API -->
+                            <div class="s-panel" id="sp-api">
+                                <div class="card">
+                                    <div class="card-header"><div><div class="card-title">Rate Limiting</div><div class="card-sub">AspNetCoreRateLimit — appsettings.json</div></div><span class="badge b-green badge-dot">Active</span></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Enable Endpoint Rate Limiting</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
+                                    <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Stack Blocked Requests</div></div><label class="toggle"><input type="checkbox"><span class="toggle-track"></span></label></div>
+                                    <div class="sec-lbl" style="margin-top:16px">Current Rules</div>
+                                    <div class="rate-row"><span class="rate-lbl">POST /api/auth/login</span><span class="rate-val">20 / 15 min</span></div>
+                                    <div class="rate-row"><span class="rate-lbl">* (all endpoints)</span><span class="rate-val">300 / 1 min</span></div>
+                                    <div style="margin-top:14px;display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="toast('Rate rules saved — update appsettings.json to apply','ok')">Save</button><button class="btn btn-ghost btn-sm" onclick="toast('Edit IpRateLimiting rules in appsettings.json','info')">+ Add Rule</button></div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-header"><div class="card-title">API Endpoints Reference</div></div>
+                                    <div class="code-block">
+                                        GET    /api/dashboard/stats
+                                        GET    /api/members          POST   /api/members
+                                        GET    /api/members/{id}     PUT    /api/members/{id}
+                                        DELETE /api/members/{id}
+                                        GET    /api/members/{id}/checkins
+                                        GET    /api/members/{id}/memberships
+                                        POST   /api/auth/login
+                                        GET    /api/trainers         POST   /api/trainers
+                                        PATCH  /api/trainers/{id}/toggle
+                                        GET    /api/courses          POST   /api/courses
+                                        DELETE /api/courses/{id}/deactivate
+                                        GET    /api/memberships      POST   /api/memberships
+                                        DELETE /api/memberships/{id}/deactivate
+                                        GET    /api/enrollments      POST   /api/enrollments
+                                        GET    /api/checkins/today   POST   /api/checkins
+                                        GET    /api/staff            POST   /api/staff
+                                        PUT    /api/staff/{id}       DELETE /api/staff/{id}
+                                        GET    /api/skills           POST   /api/skills
+                                        GET    /api/users            POST   /api/users
+                                        POST   /api/users/{id}/reset-password
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Roles -->
+                            <div class="s-panel" id="sp-roles">
+                                <div class="card">
+                                    <div class="card-header"><div><div class="card-title">Role-Based Access</div><div class="card-sub">Configured via [Authorize(Roles="…")] in the API</div></div></div>
+                                    <div class="table-wrap">
+                                        <table>
+                                            <thead><tr><th>Role</th><th>Members</th><th>Payments</th><th>Reports</th><th>Settings</th><th>Users</th></tr></thead>
+                                            <tbody>
+                                                <tr><td><span class="badge b-orange">Super Admin</span></td><td><span class="badge b-green">Full</span></td><td><span class="badge b-green">Full</span></td><td><span class="badge b-green">Full</span></td><td><span class="badge b-green">Full</span></td><td><span class="badge b-green">Full</span></td></tr>
+                                                <tr><td><span class="badge b-blue">Admin</span></td><td><span class="badge b-green">Full</span></td><td><span class="badge b-green">Full</span></td><td><span class="badge b-green">Full</span></td><td><span class="badge b-muted">Read</span></td><td><span class="badge b-muted">None</span></td></tr>
+                                                <tr><td><span class="badge b-muted">Staff</span></td><td><span class="badge b-blue">Read/Edit</span></td><td><span class="badge b-muted">Read</span></td><td><span class="badge b-muted">None</span></td><td><span class="badge b-muted">None</span></td><td><span class="badge b-muted">None</span></td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Danger -->
+                            <div class="s-panel" id="sp-accounts">
+                                <!-- My Account -->
+                                <div class="card" style="margin-bottom:16px">
+                                    <div class="card-header"><div><div class="card-title">My Account</div><div class="card-sub">Update your admin profile and password</div></div></div>
+                                    <div class="form-grid">
+                                        <div class="form-group"><label class="form-lbl">Full Name</label><input class="form-input" id="acc-fullname"></div>
+                                        <div class="form-group"><label class="form-lbl">Email</label><input class="form-input" id="acc-email" type="email"></div>
+                                    </div>
+                                    <div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="saveMyProfile()">Save Profile</button></div>
+                                    <div style="height:1px;background:var(--brd);margin:20px 0"></div>
+                                    <div class="card-title" style="font-size:13px;margin-bottom:12px">Change Password</div>
+                                    <div class="form-grid">
+                                        <div class="form-group"><label class="form-lbl">New Password</label><input class="form-input" id="acc-new-pw" type="password" placeholder="Min 6 characters"></div>
+                                        <div class="form-group"><label class="form-lbl">Confirm Password</label><input class="form-input" id="acc-confirm-pw" type="password" placeholder="Repeat password"></div>
+                                    </div>
+                                    <div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="changeMyPassword()">Change Password</button></div>
+                                </div>
+                                <!-- All Admin/Staff Accounts -->
+                                <div class="card">
+                                    <div class="card-header">
+                                        <div><div class="card-title">Admin &amp; Staff Accounts</div><div class="card-sub">Manage system user accounts</div></div>
+                                        <button class="btn btn-primary btn-sm" onclick="openOverlay('modal-overlay','new-account-modal')">+ Add Account</button>
+                                    </div>
+                                    <div class="table-wrap">
+                                        <table>
+                                            <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Email</th><th>Status</th><th></th></tr></thead>
+                                            <tbody id="accounts-tbody"><tr><td colspan="6" style="text-align:center;padding:32px;color:var(--txt3)">Click Accounts to load</td></tr></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="s-panel" id="sp-danger">
+                                <div class="card" style="border-color:rgba(232,72,72,.2)">
+                                    <div class="card-header"><div><div class="card-title" style="color:var(--red)">⚠ Danger Zone</div><div class="card-sub">Irreversible actions</div></div></div>
+                                    <div class="danger-item"><div><div class="fw5">Reset All Passwords</div><div class="text-muted" style="font-size:12px;margin-top:2px">Force all staff to reset passwords</div></div><button class="btn btn-danger btn-sm" onclick="toast('Password reset triggered','err')">Reset</button></div>
+                                    <div class="danger-item"><div><div class="fw5">Clear Check-in History</div><div class="text-muted" style="font-size:12px;margin-top:2px">Permanently delete all check-in records</div></div><button class="btn btn-danger btn-sm" onclick="toast('Check confirmation email sent','info')">Clear</button></div>
+                                    <div class="danger-item"><div><div class="fw5">Re-seed Database</div><div class="text-muted" style="font-size:12px;margin-top:2px">Drop all data and re-run seed (dev only)</div></div><button class="btn btn-danger btn-sm" onclick="toast('Seed triggered via /api/setup/seed-passwords','err')">Re-seed</button></div>
+                                    <div class="danger-item" style="border-color:rgba(232,72,72,.3);background:rgba(232,72,72,.07)"><div><div class="fw5" style="color:var(--red)">Delete All Data</div><div class="text-muted" style="font-size:12px;margin-top:2px">Cannot be undone.</div></div><button class="btn btn-danger btn-sm" onclick="toast('Disabled in production','err')">Delete All</button></div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══ AUDIT LOG ══ -->
+                <div class="page" id="page-auditlog">
+                    <div class="card">
+                        <div class="card-header"><div><div class="card-title">Audit Log</div><div class="card-sub">All system actions with IP and timestamp</div></div><button class="btn btn-ghost btn-sm" onclick="exportCSV()">Export CSV</button></div>
+                        <div class="audit-item"><div class="audit-dot" style="background:var(--green-bg);color:var(--green)">✓</div><div class="audit-content"><div class="audit-action"><strong>Admin</strong> created new member <strong>Sophea Kem</strong> (#1042)</div><div class="audit-time">Today 08:31 AM · IP 192.168.1.5</div></div></div>
+                        <div class="audit-item"><div class="audit-dot" style="background:var(--blue-bg);color:var(--blue)">→</div><div class="audit-content"><div class="audit-action"><strong>Sophea Kem</strong> checked in via card scan</div><div class="audit-time">Today 08:47 AM · Card #A4F2</div></div></div>
+                        <div class="audit-item"><div class="audit-dot" style="background:var(--amber-bg);color:var(--amber)">✎</div><div class="audit-content"><div class="audit-action"><strong>Admin</strong> updated membership plan for <strong>Dara Chan</strong></div><div class="audit-time">Today 07:15 AM · IP 192.168.1.5</div></div></div>
+                        <div class="audit-item"><div class="audit-dot" style="background:var(--red-bg);color:var(--red)">!</div><div class="audit-content"><div class="audit-action">Failed login for <strong>admin</strong> — wrong password</div><div class="audit-time">Yesterday 11:42 PM · IP 45.33.12.99</div></div></div>
+                        <div class="audit-item"><div class="audit-dot" style="background:var(--green-bg);color:var(--green)">$</div><div class="audit-content"><div class="audit-action"><strong>Srey Neang</strong> recorded payment $249 for <strong>Bopha Vong</strong></div><div class="audit-time">Yesterday 09:20 AM · IP 192.168.1.8</div></div></div>
+                        <div class="audit-item"><div class="audit-dot" style="background:var(--purple-bg);color:var(--purple)">+</div><div class="audit-content"><div class="audit-action"><strong>Admin</strong> enrolled <strong>Raksmey Sok</strong> in <strong>HIIT Extreme</strong></div><div class="audit-time">Yesterday 08:05 AM · IP 192.168.1.5</div></div></div>
+                    </div>
+                </div>
+
+            </div><!-- .content -->
+        </div><!-- .main -->
+    </div><!-- #app -->
+    <!-- ═══════════════ GLOBAL OVERLAYS ═══════════════ -->
+    <div class="overlay" id="so-overlay"></div>
+    <div class="slideover" id="slideover">
+        <div class="so-head">
+            <div class="av av-lg" id="so-avatar" style="background:var(--glow);color:var(--accent)">SK</div>
+            <div><div id="so-name" style="font-family:'Syne',sans-serif;font-size:17px;font-weight:700">—</div><div id="so-sub" style="font-size:12px;color:var(--text3);margin-top:2px">—</div></div>
+            <button class="so-close" onclick="closeMember()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg></button>
+        </div>
+        <div class="so-body">
+            <div class="tabs" style="margin-bottom:20px">
+                <div class="tab so-tab active" data-tab="profile">Profile</div>
+                <div class="tab so-tab" data-tab="memberships">Memberships</div>
+                <div class="tab so-tab" data-tab="checkins">Check-ins</div>
+                <div class="tab so-tab" data-tab="body">Body Stats</div>
+            </div>
+            <div class="so-panel" id="so-panel-profile">
+                <div class="profile-stats">
+                    <div class="profile-stat"><div class="profile-stat-val text-green" id="so-ci-count">—</div><div class="profile-stat-lbl">Check-ins</div></div>
+                    <div class="profile-stat"><div class="profile-stat-val text-accent">—</div><div class="profile-stat-lbl">Memberships</div></div>
+                    <div class="profile-stat"><div class="profile-stat-val">—</div><div class="profile-stat-lbl">Courses</div></div>
+                    <div class="profile-stat"><div class="profile-stat-val text-purple">—</div><div class="profile-stat-lbl">Enrollments</div></div>
+                </div>
+                <div class="sec-lbl mb8">Contact Info</div>
+                <div class="form-group"><label class="form-lbl">Email</label><input class="form-input" id="so-email" placeholder="—"></div>
+                <div class="form-group"><label class="form-lbl">Phone</label><input class="form-input" id="so-phone" placeholder="—"></div>
+                <div class="form-group"><label class="form-lbl">Emergency Contact</label><input class="form-input" id="so-emergency" placeholder="—"></div>
+                <div class="form-group"><label class="form-lbl">Date of Birth</label><input class="form-input" id="so-dob" type="date"></div>
+                <div class="flex gap8" style="margin-top:4px">
+                    <button class="btn btn-primary" style="flex:1" id="so-save-btn" onclick="saveMemberProfile()">Save</button>
+                    <button class="btn btn-ghost" onclick="openRenewalModal()">Renew Membership</button>
+                </div>
+            </div>
+            <div class="so-panel" id="so-panel-memberships" style="display:none">
+                <div class="sec-lbl mb8">Membership History <span class="text-muted" style="font-size:10px">(GET /api/members/{id}/memberships)</span></div>
+                <div id="so-memb-list"><div class="skeleton" style="height:50px;margin-bottom:8px"></div><div class="skeleton" style="height:50px"></div></div>
+            </div>
+            <div class="so-panel" id="so-panel-checkins" style="display:none">
+                <div class="sec-lbl mb8">Recent Check-ins <span class="text-muted" style="font-size:10px">(GET /api/members/{id}/checkins)</span></div>
+                <div id="so-checkins-list"><div class="skeleton" style="height:40px;margin-bottom:8px"></div><div class="skeleton" style="height:40px;margin-bottom:8px"></div><div class="skeleton" style="height:40px"></div></div>
+            </div>
+            <div class="so-panel" id="so-panel-body" style="display:none">
+                <div class="sec-lbl mb8">Latest Measurements</div>
+                <div class="body-stat-grid mb16">
+                    <div class="body-stat"><div class="body-stat-val">—<span style="font-size:11px;color:var(--text3)">kg</span></div><div class="body-stat-lbl">Weight</div></div>
+                    <div class="body-stat"><div class="body-stat-val">—<span style="font-size:11px;color:var(--text3)">cm</span></div><div class="body-stat-lbl">Height</div></div>
+                    <div class="body-stat"><div class="body-stat-val">—</div><div class="body-stat-lbl">BMI</div></div>
+                    <div class="body-stat"><div class="body-stat-val text-green">—<span style="font-size:11px;color:var(--text3)">%</span></div><div class="body-stat-lbl">Body Fat</div></div>
+                    <div class="body-stat"><div class="body-stat-val">—<span style="font-size:11px;color:var(--text3)">cm</span></div><div class="body-stat-lbl">Waist</div></div>
+                    <div class="body-stat"><div class="body-stat-val">—<span style="font-size:11px;color:var(--text3)">cm</span></div><div class="body-stat-lbl">Chest</div></div>
+                </div>
+                <div class="sec-lbl mb8">Log New Measurement</div>
+                <div class="form-grid">
+                    <div class="form-group"><label class="form-lbl">Weight (kg)</label><input class="form-input" type="number"></div>
+                    <div class="form-group"><label class="form-lbl">Body Fat %</label><input class="form-input" type="number"></div>
+                    <div class="form-group"><label class="form-lbl">Waist (cm)</label><input class="form-input" type="number"></div>
+                    <div class="form-group"><label class="form-lbl">Chest (cm)</label><input class="form-input" type="number"></div>
+                </div>
+                <button class="btn btn-primary" onclick="toast('Measurement logged','ok')">Log Measurement</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shared modal overlay -->
+    <div class="overlay" id="modal-overlay"></div>
+
+    <!-- Add Member Modal -->
+    <div class="modal-wrap" id="member-modal">
+        <div class="modal-box" style="width:480px">
+            <div class="modal-title">Add New Member</div>
+            <div class="modal-sub">Creates a user account + member profile via POST /api/members</div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Full Name *</label><input class="form-input" id="new-fullname" placeholder="Sophea Kem"></div>
+                <div class="form-group"><label class="form-lbl">Username *</label><input class="form-input" id="new-username" placeholder="sophea.kem"></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Email *</label><input class="form-input" id="new-email" type="email" placeholder="sophea@email.com"></div>
+                <div class="form-group"><label class="form-lbl">Password *</label><input class="form-input" id="new-password" type="password" placeholder="Min 6 characters"></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Phone</label><input class="form-input" id="new-phone" placeholder="+855 12 345 678"></div>
+                <div class="form-group"><label class="form-lbl">Gender</label><select class="form-input" id="new-gender"><option value="">— select —</option><option value="M">Male</option><option value="F">Female</option></select></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Date of Birth</label><input class="form-input" id="new-dob" type="date"></div>
+                <div class="form-group"><label class="form-lbl">Emergency Contact</label><input class="form-input" id="new-emergency" placeholder="Name · Phone"></div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeMemberModal()">Cancel</button>
+                <button class="btn btn-primary" id="new-submit-btn" onclick="submitMember()">Create Member</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual Check-in Modal -->
+    <div class="modal-wrap" id="ci-modal">
+        <div class="modal-box">
+            <div class="modal-title">Manual Check-in</div>
+            <div class="modal-sub">Select a member to check in</div>
+            <div class="form-group"><label class="form-lbl">Search Member</label><input class="form-input" id="ci-search" type="text" placeholder="Type name to filter..." oninput="filterCiMembers(this.value)"></div><div class="form-group"><label class="form-lbl">Member *</label><select class="form-input" id="ci-member-id"><option value="">Loading members…</option></select></div>
+            <div class="form-group"><label class="form-lbl">Amount (optional)</label><input class="form-input" id="ci-amount" type="number" step="0.01" placeholder="0.00"></div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','ci-modal')">Cancel</button>
+                <button class="btn btn-primary" id="ci-submit-btn" onclick="submitCheckIn()">Check In</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Trainer Modal -->
+    <div class="modal-wrap" id="trainer-modal">
+        <div class="modal-box" style="width:480px">
+            <div class="modal-title">Add Trainer</div>
+            <div class="modal-sub">POST /api/trainers — creates user account + trainer profile</div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Full Name *</label><input class="form-input" id="tr-fname" placeholder="Kosal Pich"></div>
+                <div class="form-group"><label class="form-lbl">Username *</label><input class="form-input" id="tr-username" placeholder="kosal.pich"></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Email *</label><input class="form-input" id="tr-email" type="email" placeholder="kosal@gym.com"></div>
+                <div class="form-group"><label class="form-lbl">Password *</label><input class="form-input" id="tr-password" type="password" placeholder="Min 6 characters"></div>
+            </div>
+            <div class="form-group"><label class="form-lbl">Gender</label><select class="form-input" id="tr-gender"><option value="">— select —</option><option value="M">Male</option><option value="F">Female</option></select></div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','trainer-modal')">Cancel</button>
+                <button class="btn btn-primary" id="tr-submit-btn" onclick="submitTrainer()">Add Trainer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Staff Modal -->
+    <div class="modal-wrap" id="staff-modal">
+        <div class="modal-box" style="width:480px">
+            <div class="modal-title">Add Staff</div>
+            <div class="modal-sub">POST /api/staff — creates user account + staff profile</div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Full Name *</label><input class="form-input" id="st-fname" placeholder="Srey Neang"></div>
+                <div class="form-group"><label class="form-lbl">Username *</label><input class="form-input" id="st-username" placeholder="srey.neang"></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Email *</label><input class="form-input" id="st-email" type="email" placeholder="srey@gym.com"></div>
+                <div class="form-group"><label class="form-lbl">Password *</label><input class="form-input" id="st-password" type="password" placeholder="Min 6 characters"></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Phone</label><input class="form-input" id="st-phone" placeholder="+855 12 000 000"></div>
+                <div class="form-group"><label class="form-lbl">Gender</label><select class="form-input" id="st-gender"><option value="">— select —</option><option value="M">Male</option><option value="F">Female</option></select></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Place of Birth</label><input class="form-input" id="st-place" placeholder="Phnom Penh"></div>
+                <div class="form-group"><label class="form-lbl">Salary (USD/mo)</label><input class="form-input" id="st-salary" type="number" placeholder="300"></div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','staff-modal')">Cancel</button>
+                <button class="btn btn-primary" id="st-submit-btn" onclick="submitStaff()">Add Staff</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Course Modal -->
+    <!-- CreateCourseRequest: { courseName, trainerId, skillId, price, description } -->
+    <div class="modal-wrap" id="course-modal">
+        <div class="modal-box" style="width:480px">
+            <div class="modal-title">New Course</div>
+            <div class="modal-sub">POST /api/courses — CreateCourseRequest</div>
+            <!-- Error banner shown if trainer/skill fetch fails -->
+            <div id="co-error" style="display:none;background:var(--red-bg);color:var(--red);border:1px solid rgba(232,72,72,.25);border-radius:var(--r-sm);padding:9px 12px;font-size:12px;margin-bottom:12px"></div>
+            <div class="form-group"><label class="form-lbl">Course Name *</label><input class="form-input" id="co-name" placeholder="e.g. HIIT Morning Blast"></div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-lbl">Trainer *</label>
+                    <select class="form-input" id="co-trainer">
+                        <option value="">— select trainer —</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-lbl">Skill *</label>
+                    <select class="form-input" id="co-skill">
+                        <option value="">— select skill —</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group"><label class="form-lbl">Price (USD) *</label><input class="form-input" id="co-price" type="number" step="0.01" placeholder="45.00"></div>
+            <div class="form-group"><label class="form-lbl">Description</label><input class="form-input" id="co-desc" placeholder="Brief description (optional)"></div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','course-modal')">Cancel</button>
+                <button class="btn btn-primary" id="co-submit-btn" onclick="submitCourse()">Create Course</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Membership Modal — fully custom, user fills everything themselves -->
+    <!-- CreateMembershipRequest: { clientId, type, price, startAt, expireAt } -->
+    <div class="modal-wrap" id="memb-modal">
+        <div class="modal-box" style="width:520px">
+            <div class="modal-title">Create Membership Card</div>
+            <div class="modal-sub">Fill in all details yourself — no preset plans required</div>
+
+            <!-- Member select -->
+            <div class="form-group">
+                <label class="form-lbl">Member *</label>
+                <select class="form-input" id="mb-client">
+                    <option value="">— select member —</option>
+                </select>
+            </div>
+
+            <!-- Plan type — free text, user types their own -->
+            <div class="form-group">
+                <label class="form-lbl">
+                    Plan / Type *
+                    <span style="font-weight:400;color:var(--text3);font-size:10px;margin-left:6px">type anything e.g. "VIP 3-Month", "Student", "Trial"</span>
+                </label>
+                <input class="form-input" id="mb-type-custom" placeholder="e.g. Monthly, Annual, VIP, Student…" autocomplete="off">
+                <!-- Quick-pick chips -->
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:7px">
+                    <button type="button" class="mb-chip" onclick="setMbType('Monthly',29.99,1)">Monthly</button>
+                    <button type="button" class="mb-chip" onclick="setMbType('Quarterly',79.99,3)">Quarterly</button>
+                    <button type="button" class="mb-chip" onclick="setMbType('Annual',249.00,12)">Annual</button>
+                    <button type="button" class="mb-chip" onclick="setMbType('Student',19.99,1)">Student</button>
+                    <button type="button" class="mb-chip" onclick="setMbType('VIP',99.99,1)">VIP</button>
+                    <button type="button" class="mb-chip" onclick="setMbType('Trial',0,0)">Trial (Free)</button>
+                </div>
+            </div>
+
+            <!-- Price + duration side by side -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-lbl">Price (USD) *</label>
+                    <div style="position:relative">
+                        <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px">$</span>
+                        <input class="form-input" id="mb-price" type="number" step="0.01" min="0" placeholder="0.00" style="padding-left:22px">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-lbl">
+                        Duration
+                        <span style="font-weight:400;color:var(--text3);font-size:10px;margin-left:4px">auto-sets expire</span>
+                    </label>
+                    <select class="form-input" id="mb-duration" onchange="applyMbDuration(this.value)">
+                        <option value="">— or pick dates manually —</option>
+                        <option value="0.5">2 Weeks</option>
+                        <option value="1">1 Month</option>
+                        <option value="2">2 Months</option>
+                        <option value="3">3 Months</option>
+                        <option value="6">6 Months</option>
+                        <option value="12">1 Year</option>
+                        <option value="24">2 Years</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Dates -->
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-lbl">Start Date *</label>
+                    <input class="form-input" id="mb-start" type="date" onchange="recalcMbExpire()">
+                </div>
+                <div class="form-group">
+                    <label class="form-lbl">Expire Date *</label>
+                    <input class="form-input" id="mb-expire" type="date">
+                </div>
+            </div>
+
+            <!-- Live preview card -->
+            <div id="mb-preview" style="background:linear-gradient(135deg,var(--s3) 0%,var(--s2) 100%);border:1px solid var(--brd2);border-radius:var(--r-lg);padding:16px 20px;margin-top:2px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+                <div>
+                    <div style="font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px">GymPro Membership</div>
+                    <div id="prev-name" style="font-size:15px;font-weight:700;color:var(--txt)">—</div>
+                    <div id="prev-type" style="font-size:12px;color:var(--acc);margin-top:2px;font-weight:600">—</div>
+                    <div id="prev-dates" style="font-size:11px;color:var(--txt3);margin-top:4px">— → —</div>
+                </div>
+                <div style="text-align:right">
+                    <div style="font-size:10px;color:var(--txt3);margin-bottom:2px">Amount</div>
+                    <div id="prev-price" style="font-size:22px;font-weight:800;color:var(--txt);font-family:'Syne',system-ui,sans-serif">$—</div>
+                    <div style="width:40px;height:3px;background:var(--acc);border-radius:2px;margin:6px 0 0 auto"></div>
+                </div>
+            </div>
+
+            <div class="modal-foot" style="margin-top:14px">
+                <button class="btn btn-ghost" onclick="closeMembModal()">Cancel</button>
+                <button class="btn btn-primary" id="mb-submit-btn" onclick="submitMembership()">Create Membership</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Record Payment = New Membership (no separate payments table in API) -->
+    <div class="modal-wrap" id="payment-modal">
+        <div class="modal-box" style="width:440px">
+            <div class="modal-title">Record Payment</div>
+            <div class="modal-sub">Creates a membership record via POST /api/memberships</div>
+            <div class="form-group">
+                <label class="form-lbl">Member *</label>
+                <select class="form-input" id="pay-client">
+                    <option value="">— select member —</option>
+                </select>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label class="form-lbl">Plan Type *</label>
+                    <select class="form-input" id="pay-type">
+                        <option value="Monthly">Monthly — $29.99</option>
+                        <option value="Quarterly">Quarterly — $79.99</option>
+                        <option value="Annual">Annual — $249.00</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-lbl">Amount (USD)</label><input class="form-input" id="pay-price" type="number" step="0.01" placeholder="29.99"></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Start Date *</label><input class="form-input" id="pay-start" type="date"></div>
+                <div class="form-group"><label class="form-lbl">Expire Date *</label><input class="form-input" id="pay-expire" type="date"></div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','payment-modal')">Cancel</button>
+                <button class="btn btn-primary" id="pay-submit-btn" onclick="submitPayment()">Record Payment</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global JS error banner — shown if app.js crashes -->
+    <div id="js-error-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:9999;background:#e84848;color:white;padding:12px 20px;font-size:13px;font-family:monospace"></div>
+
+    <div id="toast-wrap"></div>
+
+
+    <!-- Add Membership Plan Modal -->
+    <div class="modal-wrap" id="plan-modal">
+        <div class="modal-box" style="width:420px">
+            <div class="modal-title">Add Membership Plan</div>
+            <div class="modal-sub">This plan will appear on the public website</div>
+            <div class="form-group">
+                <label class="form-lbl">Plan Name *</label>
+                <input class="form-input" id="plan-type" placeholder="e.g. Monthly, Annual, VIP">
+            </div>
+            <div class="form-group">
+                <label class="form-lbl">Description</label>
+                <input class="form-input" id="plan-desc" placeholder="e.g. Unlimited gym access, all classes">
+            </div>
+            <div class="g2">
+                <div class="form-group">
+                    <label class="form-lbl">Price (USD) *</label>
+                    <input class="form-input" id="plan-price" type="number" step="0.01" min="0" placeholder="0.00">
+                </div>
+                <div class="form-group">
+                    <label class="form-lbl">Duration (months) *</label>
+                    <input class="form-input" id="plan-duration" type="number" min="1" max="120" value="1">
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','plan-modal')">Cancel</button>
+                <button class="btn btn-primary" id="plan-submit-btn" onclick="submitPlan()">Add Plan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Admin/Staff Account Modal -->
+    <div class="modal-wrap" id="new-account-modal">
+        <div class="modal-box" style="width:480px">
+            <div class="modal-title">Add Account</div>
+            <div class="modal-sub">Create a new Admin or Staff login</div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Full Name *</label><input class="form-input" id="nacc-fullname" placeholder="e.g. Sophea Kem"></div>
+                <div class="form-group"><label class="form-lbl">Username *</label><input class="form-input" id="nacc-username" placeholder="e.g. sophea.kem"></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Email *</label><input class="form-input" id="nacc-email" type="email" placeholder="user@gym.com"></div>
+                <div class="form-group">
+                    <label class="form-lbl">Gender</label>
+                    <select class="form-input" id="nacc-gender"><option value="">— select —</option><option value="M">Male</option><option value="F">Female</option></select>
+                </div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group"><label class="form-lbl">Password *</label><input class="form-input" id="nacc-password" type="password" placeholder="Min 6 characters"></div>
+                <div class="form-group">
+                    <label class="form-lbl">Role *</label>
+                    <select class="form-input" id="nacc-role">
+                        <option value="1">Admin</option>
+                        <option value="2" selected>Staff</option>
+                        <option value="3">Trainer</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','new-account-modal')">Cancel</button>
+                <button class="btn btn-primary" id="nacc-submit-btn" onclick="submitNewAccount()">Create Account</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reset Password Modal -->
+    <div class="modal-wrap" id="reset-pw-modal">
+        <div class="modal-box" style="width:380px">
+            <div class="modal-title">Reset Password</div>
+            <div class="modal-sub" id="reset-pw-sub">Set a new password for this account</div>
+            <input type="hidden" id="reset-pw-uid">
+            <div class="form-group"><label class="form-lbl">New Password *</label><input class="form-input" id="reset-pw-value" type="password" placeholder="Min 6 characters"></div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','reset-pw-modal')">Cancel</button>
+                <button class="btn btn-primary" id="reset-pw-btn" onclick="submitResetPassword()">Reset Password</button>
+            </div>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Catch any uncaught errors and show them visibly instead of silent failure
+        window.addEventListener('error', function (e) {
+            var banner = document.getElementById('js-error-banner');
+            if (banner) {
+                banner.style.display = 'block';
+                banner.textContent = '⚠ JS Error: ' + e.message + ' (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')';
+            }
+        });
+    </script>
+</html>

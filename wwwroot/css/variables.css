@@ -1,0 +1,58 @@
+
+/* ?? Dark theme (default) ??????????????????????????????????? */
+:root {
+    --bg: #090b10;
+    --s1: #0f1219;
+    --s2: #151a25;
+    --s3: #1c2230;
+    --border: rgba(255,255,255,0.06);
+    --border2: rgba(255,255,255,0.11);
+    --border3: rgba(255,255,255,0.20);
+    --text: #dde3f0;
+    --text2: #8892aa;
+    --text3: #545e74;
+    --shadow: rgba(0,0,0,0.45);
+    --accent: #e8621a;
+    --accent2: #f0783a;
+    --glow: rgba(232,98,26,0.16);
+    --glow2: rgba(232,98,26,0.08);
+    --green: #1db97a;
+    --green-bg: rgba(29,185,122,0.12);
+    --red: #e84848;
+    --red-bg: rgba(232,72,72,0.12);
+    --blue: #4088f4;
+    --blue-bg: rgba(64,136,244,0.12);
+    --purple: #9d6bf5;
+    --purple-bg: rgba(157,107,245,0.12);
+    --amber: #f5a623;
+    --amber-bg: rgba(245,166,35,0.12);
+    --r: 10px;
+    --r-sm: 7px;
+    --r-lg: 14px;
+    --sidebar: 248px;
+    --topbar: 58px;
+    --ease: cubic-bezier(.4,0,.2,1);
+    --dur: .18s;
+    --theme-dur: .28s;
+}
+    /* ?? Light theme ???????????????????????????????????????????? */
+    :root.light {
+        --bg: #f0f2f8;
+        --s1: #ffffff;
+        --s2: #f4f6fb;
+        --s3: #e8ecf5;
+        --border: rgba(0,0,0,0.07);
+        --border2: rgba(0,0,0,0.12);
+        --border3: rgba(0,0,0,0.22);
+        --text: #1a1f2e;
+        --text2: #4a5468;
+        --text3: #8894aa;
+        --shadow: rgba(0,0,0,0.10);
+        --glow: rgba(232,98,26,0.10);
+        --glow2: rgba(232,98,26,0.06);
+        --green-bg: rgba(29,185,122,0.10);
+        --red-bg: rgba(232,72,72,0.10);
+        --blue-bg: rgba(64,136,244,0.10);
+        --purple-bg: rgba(157,107,245,0.10);
+        --amber-bg: rgba(245,166,35,0.10);
+    }

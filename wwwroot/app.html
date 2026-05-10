@@ -143,8 +143,8 @@
                             <table><thead><tr><th>Member</th><th>Course</th><th>Date</th><th>Status</th></tr></thead><tbody id="dash-enrollments-tbody"><tr><td colspan="4"><div class="skeleton" style="height:12px;margin:8px 0"></div></td></tr></tbody></table>
                         </div>
                         <div class="card">
-                            <div class="card-header"><div><div class="card-title">Pending Approvals</div><div class="card-sub">Course enrollments awaiting approval</div></div><span class="badge b-amber" id="pending-count-badge" style="display:none">0</span></div>
-                            <div id="pending-approvals-list"><div class="skeleton" style="height:44px;margin-bottom:8px"></div><div class="skeleton" style="height:44px"></div></div>
+                            <div class="card-header"><div><div class="card-title">Course Payments</div><div class="card-sub">Courses activate after KHQR MD5 verification</div></div><span class="badge b-green badge-dot">Auto</span></div>
+                            <div id="course-payment-flow" class="text-muted" style="font-size:12px;padding:16px">No manual course approval is required. Paid KHQR course orders create approved enrollments automatically.</div>
                         </div>
                     </div>
                 </div>
@@ -289,16 +289,11 @@
                     </div>
                     <div class="g-7-3">
                         <div class="card">
-                            <div class="card-header"><div><div class="card-title">Transactions</div><div class="card-sub">Add a /api/payments endpoint to load real data</div></div><button class="btn btn-ghost btn-sm" onclick="toast('Exporting…','info')">Export</button></div>
+                            <div class="card-header"><div><div class="card-title">Transactions</div><div class="card-sub">Membership revenue and Bakong KHQR intents</div></div><button class="btn btn-ghost btn-sm" onclick="toast('Exporting…','info')">Export</button></div>
                             <div class="table-wrap">
                                 <table>
-                                    <thead><tr><th>Member</th><th>Plan</th><th>Amount</th><th>Date</th><th>Status</th></tr></thead>
-                                    <tbody>
-                                        <tr><td>Sophea Kem</td><td>Annual</td><td class="fw6">$249.00</td><td class="text-muted">Mar 5, 2025</td><td><span class="badge b-green badge-dot">Paid</span></td></tr>
-                                        <tr><td>Dara Chan</td><td>Monthly</td><td class="fw6">$29.99</td><td class="text-muted">Mar 1, 2025</td><td><span class="badge b-green badge-dot">Paid</span></td></tr>
-                                        <tr><td>Raksmey Sok</td><td>Quarterly</td><td class="fw6">$79.99</td><td class="text-muted">Feb 20, 2025</td><td><span class="badge b-amber">Pending</span></td></tr>
-                                        <tr><td>Pisey Lim</td><td>Monthly</td><td class="fw6">$29.99</td><td class="text-muted">Feb 10, 2025</td><td><span class="badge b-red">Overdue</span></td></tr>
-                                    </tbody>
+                                    <thead><tr><th>Reference</th><th>Purpose</th><th>Amount</th><th>Date</th><th>Status</th><th></th></tr></thead>
+                                    <tbody id="pay-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:32px">Loading…</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
@@ -370,7 +365,7 @@
                                 <div class="card">
                                     <div class="card-header"><div><div class="card-title">JWT Settings</div><div class="card-sub">appsettings.json → JwtSettings</div></div></div>
                                     <div class="form-grid"><div class="form-group"><label class="form-lbl">Issuer</label><input class="form-input" value="GymManagementAPI"></div><div class="form-group"><label class="form-lbl">Audience</label><input class="form-input" value="GymManagementClient"></div><div class="form-group"><label class="form-lbl">Dev Expiry (min)</label><input class="form-input" type="number" value="480"><div class="form-hint">8 hours</div></div><div class="form-group"><label class="form-lbl">Prod Expiry (min)</label><input class="form-input" type="number" value="240"><div class="form-hint">4 hours</div></div></div>
-                                    <div class="form-group"><label class="form-lbl">Secret Key</label><div class="api-key-box"><span class="api-key-val" id="jwt-secret">GymProSuperSecretKey2024!@#$%^&*()</span><button class="copy-btn" onclick="regenJWT()">Regenerate</button></div><div class="form-hint" style="color:var(--amber)">⚠ Changing this invalidates all sessions</div></div>
+                                    <div class="form-group"><label class="form-lbl">Secret Key</label><div class="api-key-box"><span class="api-key-val" id="jwt-secret">GymProSuperSecretKey2024!@#$%^&*()</span><button class="copy-btn" onclick="regenJWT()">Regenerate</button></div><div class="form-hint" style="color:var(--amber);display:flex;align-items:center;gap:6px"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>Changing this invalidates all sessions</div></div>
                                     <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Validate Issuer</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
                                     <div class="toggle-row"><div class="toggle-info"><div class="toggle-title">Validate Audience</div></div><label class="toggle"><input type="checkbox" checked><span class="toggle-track"></span></label></div>
                                     <div style="margin-top:14px"><button class="btn btn-primary" onclick="toast('JWT config saved','ok')">Save</button></div>
@@ -490,7 +485,7 @@
 
                             <div class="s-panel" id="sp-danger">
                                 <div class="card" style="border-color:rgba(232,72,72,.2)">
-                                    <div class="card-header"><div><div class="card-title" style="color:var(--red)">⚠ Danger Zone</div><div class="card-sub">Irreversible actions</div></div></div>
+                                    <div class="card-header"><div><div class="card-title" style="color:var(--red);display:flex;align-items:center;gap:6px"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.3 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.3a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>Danger Zone</div><div class="card-sub">Irreversible actions</div></div></div>
                                     <div class="danger-item"><div><div class="fw5">Reset All Passwords</div><div class="text-muted" style="font-size:12px;margin-top:2px">Force all staff to reset passwords</div></div><button class="btn btn-danger btn-sm" onclick="toast('Password reset triggered','err')">Reset</button></div>
                                     <div class="danger-item"><div><div class="fw5">Clear Check-in History</div><div class="text-muted" style="font-size:12px;margin-top:2px">Permanently delete all check-in records</div></div><button class="btn btn-danger btn-sm" onclick="toast('Check confirmation email sent','info')">Clear</button></div>
                                     <div class="danger-item"><div><div class="fw5">Re-seed Database</div><div class="text-muted" style="font-size:12px;margin-top:2px">Drop all data and re-run seed (dev only)</div></div><button class="btn btn-danger btn-sm" onclick="toast('Seed triggered via /api/setup/seed-passwords','err')">Re-seed</button></div>
@@ -506,7 +501,7 @@
                 <div class="page" id="page-auditlog">
                     <div class="card">
                         <div class="card-header"><div><div class="card-title">Audit Log</div><div class="card-sub">All system actions with IP and timestamp</div></div><button class="btn btn-ghost btn-sm" onclick="exportCSV()">Export CSV</button></div>
-                        <div class="audit-item"><div class="audit-dot" style="background:var(--green-bg);color:var(--green)">✓</div><div class="audit-content"><div class="audit-action"><strong>Admin</strong> created new member <strong>Sophea Kem</strong> (#1042)</div><div class="audit-time">Today 08:31 AM · IP 192.168.1.5</div></div></div>
+                        <div class="audit-item"><div class="audit-dot" style="background:var(--green-bg);color:var(--green)"><svg class="ui-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5" /></svg></div><div class="audit-content"><div class="audit-action"><strong>Admin</strong> created new member <strong>Sophea Kem</strong> (#1042)</div><div class="audit-time">Today 08:31 AM · IP 192.168.1.5</div></div></div>
                         <div class="audit-item"><div class="audit-dot" style="background:var(--blue-bg);color:var(--blue)">→</div><div class="audit-content"><div class="audit-action"><strong>Sophea Kem</strong> checked in via card scan</div><div class="audit-time">Today 08:47 AM · Card #A4F2</div></div></div>
                         <div class="audit-item"><div class="audit-dot" style="background:var(--amber-bg);color:var(--amber)">✎</div><div class="audit-content"><div class="audit-action"><strong>Admin</strong> updated membership plan for <strong>Dara Chan</strong></div><div class="audit-time">Today 07:15 AM · IP 192.168.1.5</div></div></div>
                         <div class="audit-item"><div class="audit-dot" style="background:var(--red-bg);color:var(--red)">!</div><div class="audit-content"><div class="audit-action">Failed login for <strong>admin</strong> — wrong password</div><div class="audit-time">Yesterday 11:42 PM · IP 45.33.12.99</div></div></div>
@@ -582,6 +577,21 @@
 
     <!-- Shared modal overlay -->
     <div class="overlay" id="modal-overlay"></div>
+    <div class="overlay" id="popup-overlay"></div>
+
+    <div class="modal-wrap" id="popup-modal" role="dialog" aria-modal="true" aria-labelledby="popup-title">
+        <div class="modal-box" style="width:380px">
+            <div class="popup-title-row">
+                <div class="popup-icon" id="popup-icon"></div>
+                <div class="modal-title" id="popup-title">Confirm Action</div>
+            </div>
+            <div class="modal-sub" id="popup-message">Please confirm this action.</div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" id="popup-cancel" type="button">Cancel</button>
+                <button class="btn btn-danger" id="popup-confirm" type="button">Confirm</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Add Member Modal -->
     <div class="modal-wrap" id="member-modal">
@@ -917,6 +927,7 @@
             </div>
         </div>
     </div>
+    <script src="js/icons.js"></script>
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
     <script>
@@ -925,7 +936,7 @@
             var banner = document.getElementById('js-error-banner');
             if (banner) {
                 banner.style.display = 'block';
-                banner.textContent = '⚠ JS Error: ' + e.message + ' (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')';
+                banner.textContent = 'JS Error: ' + e.message + ' (' + (e.filename || '').split('/').pop() + ':' + e.lineno + ')';
             }
         });
     </script>

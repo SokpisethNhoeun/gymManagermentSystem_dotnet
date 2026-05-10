@@ -50,10 +50,10 @@ function _cp(dark = true) {
 // ── Toast ──────────────────────────────────────────────────────────────────────
 function toast(msg, type = 'info', ms = 3200) {
     const wrap = document.getElementById('toast-wrap'); if (!wrap) return;
-    const icons = { ok: '✓', err: '✕', info: 'i', warn: '!' };
+    const icons = { ok: 'check', err: 'x', info: 'info', warn: 'warning' };
     const el = document.createElement('div');
     el.className = `toast ${type}`;
-    el.innerHTML = `<div class="toast-icon">${icons[type] || 'i'}</div><span>${msg}</span>`;
+    el.innerHTML = `<div class="toast-icon">${GymIcons.svg(icons[type] || 'info')}</div><span>${msg}</span>`;
     wrap.appendChild(el);
     setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(20px)'; setTimeout(() => el.remove(), 260); }, ms);
 }
@@ -61,7 +61,52 @@ function toast(msg, type = 'info', ms = 3200) {
 // ── Overlay helpers ────────────────────────────────────────────────────────────
 function openOverlay(oId, pId) { document.getElementById(oId)?.classList.add('open'); document.getElementById(pId)?.classList.add('open'); }
 function closeOverlay(oId, pId) { document.getElementById(oId)?.classList.remove('open'); document.getElementById(pId)?.classList.remove('open'); }
-function closeAll() { document.querySelectorAll('.overlay.open,.slideover.open,.modal-wrap.open').forEach(e => e.classList.remove('open')); }
+function closeAll() { closePopup(false); document.querySelectorAll('.overlay.open,.slideover.open,.modal-wrap.open').forEach(e => e.classList.remove('open')); }
+
+let _popupResolve = null;
+function closePopup(result = false) {
+    document.getElementById('popup-overlay')?.classList.remove('open');
+    document.getElementById('popup-modal')?.classList.remove('open');
+    if (_popupResolve) {
+        const resolve = _popupResolve;
+        _popupResolve = null;
+        resolve(result);
+    }
+}
+
+function popupConfirm({ title = 'Confirm Action', message = 'Please confirm this action.', confirmText = 'Confirm', cancelText = 'Cancel', tone = 'danger' } = {}) {
+    if (_popupResolve) closePopup(false);
+    const overlay = document.getElementById('popup-overlay');
+    const modal = document.getElementById('popup-modal');
+    const titleEl = document.getElementById('popup-title');
+    const messageEl = document.getElementById('popup-message');
+    const iconEl = document.getElementById('popup-icon');
+    const cancelBtn = document.getElementById('popup-cancel');
+    const confirmBtn = document.getElementById('popup-confirm');
+    if (!overlay || !modal || !titleEl || !messageEl || !iconEl || !cancelBtn || !confirmBtn) {
+        toast(message, tone === 'danger' ? 'err' : 'warn');
+        return Promise.resolve(false);
+    }
+
+    const iconName = tone === 'danger' ? 'x' : tone === 'ok' ? 'check' : tone === 'info' ? 'info' : 'warning';
+    titleEl.textContent = title;
+    messageEl.textContent = message;
+    iconEl.className = `popup-icon ${tone}`;
+    iconEl.innerHTML = GymIcons.svg(iconName);
+    cancelBtn.textContent = cancelText;
+    confirmBtn.textContent = confirmText;
+    confirmBtn.className = tone === 'danger' ? 'btn btn-danger' : 'btn btn-primary';
+    overlay.classList.add('open');
+    modal.classList.add('open');
+
+    return new Promise(resolve => {
+        _popupResolve = resolve;
+        overlay.onclick = () => closePopup(false);
+        cancelBtn.onclick = () => closePopup(false);
+        confirmBtn.onclick = () => closePopup(true);
+        setTimeout(() => confirmBtn.focus(), 0);
+    });
+}
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 const AV_COLS = ['var(--glow),var(--accent)', 'var(--blue-bg),var(--blue)', 'var(--purple-bg),var(--purple)', 'var(--green-bg),var(--green)', 'var(--amber-bg),var(--amber)', 'var(--red-bg),var(--red)'];
@@ -81,13 +126,13 @@ function apiError(err, cols) {
     const is401 = err && (err.includes('401') || err.toLowerCase().includes('unauthorized'));
     if (is403 || is401) {
         return `<tr><td colspan="${cols}" style="text-align:center;padding:32px">
-      <div style="font-size:22px;margin-bottom:8px">🔒</div>
+      <div style="display:flex;justify-content:center;margin-bottom:8px;color:var(--amber)">${GymIcons.svg('lock', 'ui-icon',)}</div>
       <div style="font-weight:600;color:var(--txt);margin-bottom:4px">Access Restricted</div>
       <div style="font-size:12px;color:var(--txt3)">Your role (<strong>${window._userRole || 'Unknown'}</strong>) does not have permission to view this section.</div>
     </td></tr>`;
     }
     return `<tr><td colspan="${cols}" style="text-align:center;padding:32px">
-    <div style="color:var(--red);margin-bottom:8px">⚠ ${err}</div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;color:var(--red);margin-bottom:8px">${GymIcons.svg('warning')}<span>${err}</span></div>
     <div style="font-size:12px;color:var(--txt3)">Check your .NET API is running on port 5000</div>
   </td></tr>`;
 }
@@ -151,7 +196,7 @@ function renderSoCheckIns(data) {
     if (!data?.length) { el.innerHTML = '<div class="text-muted" style="font-size:12px;padding:12px 0">No check-ins found.</div>'; return; }
     el.innerHTML = data.slice(0, 8).map(c => `
     <div class="audit-item">
-      <div class="audit-dot" style="background:var(--green-bg);color:var(--green)">✓</div>
+      <div class="audit-dot" style="background:var(--green-bg);color:var(--green)">${GymIcons.svg('check')}</div>
       <div class="audit-content">
         <div class="audit-action">Checked in</div>
         <div class="audit-time">${fmtDate(c.checkinDate)} ${fmtTime(c.checkinDate)}</div>
@@ -198,7 +243,7 @@ async function submitMember() {
     btnLoading('new-submit-btn', true, 'Create Member');
     try {
         await Api.createMember(body);
-        toast('Member created ✓', 'ok');
+        toast('Member created', 'ok');
         closeMemberModal();
         ['new-fullname', 'new-username', 'new-email', 'new-password', 'new-phone', 'new-emergency', 'new-dob'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
         if (_currentPage === 'members') loadMembers();
@@ -217,7 +262,7 @@ async function submitCheckIn() {
         await Api.createCheckIn({ clientId: parseInt(id), amount });
         const sel = document.getElementById('ci-member-id');
         const memberName = sel?.options[sel.selectedIndex]?.text || `Member #${id}`;
-        toast(`${memberName} checked in ✓`, 'ok');
+        toast(`${memberName} checked in`, 'ok');
         closeOverlay('modal-overlay', 'ci-modal');
         const am = document.getElementById('ci-amount'); if (am) am.value = '';
         if (_currentPage === 'checkins') loadCheckins();
@@ -242,7 +287,7 @@ async function submitTrainer() {
     btnLoading('tr-submit-btn', true, 'Add Trainer');
     try {
         await Api.createTrainer(body);
-        toast('Trainer added ✓', 'ok');
+        toast('Trainer added', 'ok');
         closeOverlay('modal-overlay', 'trainer-modal');
         ['tr-fname', 'tr-username', 'tr-email', 'tr-password'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
         loadTrainers();
@@ -269,7 +314,7 @@ async function submitStaff() {
     btnLoading('st-submit-btn', true, 'Add Staff');
     try {
         await Api.createStaff(body);
-        toast('Staff added ✓', 'ok');
+        toast('Staff added', 'ok');
         closeOverlay('modal-overlay', 'staff-modal');
         ['st-fname', 'st-username', 'st-email', 'st-password', 'st-phone', 'st-place', 'st-salary'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
         loadStaff();
@@ -403,7 +448,7 @@ async function saveMemberProfile() {
     btnLoading('so-save-btn', true, 'Save');
     try {
         await Api.put(`/users/${userId}`, body);
-        toast('Profile saved ✓', 'ok');
+        toast('Profile saved', 'ok');
         if (_currentPage === 'members') loadMembers();
     } catch (e) { toast(e.message, 'err'); }
     finally { btnLoading('so-save-btn', false, 'Save'); }
@@ -465,7 +510,7 @@ async function openCourseModal() {
     const errors = [trErr, skErr].filter(Boolean);
     if (errEl) {
         if (errors.length) {
-            errEl.textContent = '⚠ ' + errors.join(' · ');
+            errEl.textContent = errors.join(' · ');
             errEl.style.display = 'block';
         } else {
             errEl.style.display = 'none';
@@ -490,7 +535,7 @@ async function submitCourse() {
     btnLoading('co-submit-btn', true, 'Create Course');
     try {
         await Api.createCourse(body);
-        toast('Course created ✓', 'ok');
+        toast('Course created', 'ok');
         closeOverlay('modal-overlay', 'course-modal');
         // Clear form for next use
         ['co-name', 'co-price', 'co-desc'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
@@ -542,7 +587,7 @@ async function submitMembership() {
     btnLoading('mb-submit-btn', true, 'Create Membership');
     try {
         await Api.createMembership(body);
-        toast('Membership created ✓', 'ok');
+        toast('Membership created', 'ok');
         closeMembModal();
         ['mb-price', 'mb-start', 'mb-expire', 'mb-type-custom'].forEach(id => {
             const e = document.getElementById(id); if (e) e.value = '';
@@ -670,7 +715,7 @@ async function submitPayment() {
     btnLoading('pay-submit-btn', true, 'Record Payment');
     try {
         await Api.createMembership(body);
-        toast('Payment recorded ✓', 'ok');
+        toast('Payment recorded', 'ok');
         closeOverlay('modal-overlay', 'payment-modal');
         ['pay-price', 'pay-start', 'pay-expire'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
         const cs = document.getElementById('pay-client'); if (cs) cs.selectedIndex = 0;
@@ -681,18 +726,7 @@ async function submitPayment() {
     finally { btnLoading('pay-submit-btn', false, 'Record Payment'); }
 }
 
-// -- Approve / Reject pending enrollment
-async function approveEnrollment(id, approve, btnEl) {
-    if (btnEl) { btnEl.disabled = true; btnEl.textContent = '...'; }
-    try {
-        await Api.patch(`/enrollments/${id}/approve`, { approve });
-        toast(approve ? 'Enrollment approved \u2713' : 'Enrollment rejected', approve ? 'ok' : 'info');
-        loadDashboard();
-    } catch (e) { toast(e.message, 'err'); }
-    finally { if (btnEl) { btnEl.disabled = false; } }
-}
-
-// -- Load recent enrollments + pending approvals for dashboard
+// -- Load recent enrollments for dashboard. Course purchases are approved by KHQR payment verification.
 async function loadDashboardEnrollments() {
     // Recent enrollments
     try {
@@ -712,30 +746,8 @@ async function loadDashboardEnrollments() {
         }
     } catch (e) { console.warn('Dashboard enrollments:', e.message); }
 
-    // Pending approvals
-    try {
-        const pending = await Api.get('/enrollments/pending') || [];
-        const badge = document.getElementById('pending-count-badge');
-        if (badge) { badge.textContent = pending.length; badge.style.display = pending.length ? '' : 'none'; }
-        const list = document.getElementById('pending-approvals-list');
-        if (list) {
-            if (!pending.length) {
-                list.innerHTML = '<div class="text-muted" style="font-size:12px;padding:16px;text-align:center">No pending approvals</div>';
-            } else {
-                list.innerHTML = pending.map(e => `
-          <div class="pay-row" style="align-items:center">
-            <div class="pay-info" style="flex:1">
-              <div class="pay-name">${e.clientName || '\u2014'}</div>
-              <div class="pay-meta">${e.courseName || '\u2014'} \u00b7 ${fmtDate(e.startAt)}</div>
-            </div>
-            <div style="display:flex;gap:6px">
-              <button class="btn btn-primary btn-sm" onclick="approveEnrollment(${e.enrollmentId}, true, this)">Approve</button>
-              <button class="btn btn-danger btn-sm" onclick="approveEnrollment(${e.enrollmentId}, false, this)">Reject</button>
-            </div>
-          </div>`).join('');
-            }
-        }
-    } catch (e) { console.warn('Pending approvals:', e.message); }
+    const flow = document.getElementById('course-payment-flow');
+    if (flow) flow.textContent = 'No manual course approval is required. Paid KHQR course orders create approved enrollments automatically.';
 }
 
 // -- CI modal member search filter
@@ -789,7 +801,7 @@ async function submitPlan() {
     btnLoading('plan-submit-btn', true, 'Add Plan');
     try {
         await Api.createMembershipPlan(body);
-        toast(`${body.type} plan added ✓`, 'ok');
+        toast(`${body.type} plan added`, 'ok');
         closeOverlay('modal-overlay', 'plan-modal');
         ['plan-type', 'plan-desc', 'plan-price'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
         const d = document.getElementById('plan-duration'); if (d) d.value = '1';
@@ -799,7 +811,13 @@ async function submitPlan() {
 }
 
 async function deletePlan(id, name) {
-    if (!confirm(`Remove "${name}" from the public website?`)) return;
+    const confirmed = await popupConfirm({
+        title: 'Remove Plan',
+        message: `Remove "${name}" from the public website?`,
+        confirmText: 'Remove',
+        tone: 'danger',
+    });
+    if (!confirmed) return;
     try { await Api.deleteMembershipPlan(id); toast(`${name} removed`, 'ok'); loadPlansManagement(); }
     catch (e) { toast(e.message, 'err'); }
 }
@@ -1072,7 +1090,7 @@ async function saveMyProfile() {
         const nameEl = document.getElementById('sidebar-name'); if (nameEl) nameEl.textContent = fullName;
         const avEl = document.getElementById('sidebar-av');
         if (avEl) avEl.textContent = fullName.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-        toast('Profile updated \u2713', 'ok');
+        toast('Profile updated', 'ok');
     } catch (e) { toast(e.message, 'err'); }
 }
 
@@ -1093,7 +1111,7 @@ async function changeMyPassword() {
         await Api.patch(`/users/${userId}/reset-password`, { newPassword: np });
         document.getElementById('acc-new-pw').value = '';
         document.getElementById('acc-confirm-pw').value = '';
-        toast('Password changed \u2713', 'ok');
+        toast('Password changed', 'ok');
     } catch (e) { toast(e.message, 'err'); }
 }
 
@@ -1114,7 +1132,7 @@ async function submitNewAccount() {
     btnLoading('nacc-submit-btn', true, 'Create Account');
     try {
         await Api.createUser(body);
-        toast(`Account created for ${body.fullName} \u2713`, 'ok');
+        toast(`Account created for ${body.fullName}`, 'ok');
         closeOverlay('modal-overlay', 'new-account-modal');
         ['nacc-fullname', 'nacc-username', 'nacc-email', 'nacc-password'].forEach(id => {
             const e = document.getElementById(id); if (e) e.value = '';
@@ -1138,7 +1156,7 @@ async function submitResetPassword() {
     btnLoading('reset-pw-btn', true, 'Reset Password');
     try {
         await Api.patch(`/users/${userId}/reset-password`, { newPassword: pw });
-        toast('Password reset \u2713', 'ok');
+        toast('Password reset', 'ok');
         closeOverlay('modal-overlay', 'reset-pw-modal');
     } catch (e) { toast(e.message, 'err'); }
     finally { btnLoading('reset-pw-btn', false, 'Reset Password'); }
@@ -1146,14 +1164,20 @@ async function submitResetPassword() {
 
 async function toggleAccount(userId, currentlyActive, name) {
     const action = currentlyActive ? 'disable' : 're-enable';
-    if (!confirm(`Are you sure you want to ${action} the account for "${name}"?`)) return;
+    const confirmed = await popupConfirm({
+        title: currentlyActive ? 'Disable Account' : 'Enable Account',
+        message: `Are you sure you want to ${action} the account for "${name}"?`,
+        confirmText: currentlyActive ? 'Disable' : 'Enable',
+        tone: currentlyActive ? 'danger' : 'warning',
+    });
+    if (!confirmed) return;
     try {
         if (currentlyActive) {
             await Api.del(`/users/${userId}`);
         } else {
             await Api.put(`/users/${userId}`, { fullName: name, gender: null, email: '', isActive: true });
         }
-        toast(`Account ${currentlyActive ? 'disabled' : 'enabled'} \u2713`, 'ok');
+        toast(`Account ${currentlyActive ? 'disabled' : 'enabled'}`, 'ok');
         loadAccountsPanel();
     } catch (e) { toast(e.message, 'err'); }
 }
@@ -1326,7 +1350,13 @@ async function loadCourses() {
     } catch (e) { setHTML('courses-list', `<div style="padding:24px;color:var(--red)">${e.message}</div>`); }
 }
 async function deactivateCourse(id, name) {
-    if (!confirm(`Deactivate "${name}"?`)) return;
+    const confirmed = await popupConfirm({
+        title: 'Deactivate Course',
+        message: `Deactivate "${name}"?`,
+        confirmText: 'Deactivate',
+        tone: 'danger',
+    });
+    if (!confirmed) return;
     try { await Api.deactivateCourse(id); toast(`${name} deactivated`, 'ok'); loadCourses(); }
     catch (e) { toast(e.message, 'err'); }
 }
@@ -1359,7 +1389,13 @@ async function loadMemberships() {
     } catch (e) { setHTML('memb-tbody', apiError(e.message, 6)); }
 }
 async function deactivateMemb(id, name) {
-    if (!confirm(`Deactivate membership for "${name}"?`)) return;
+    const confirmed = await popupConfirm({
+        title: 'Deactivate Membership',
+        message: `Deactivate membership for "${name}"?`,
+        confirmText: 'Deactivate',
+        tone: 'danger',
+    });
+    if (!confirmed) return;
     try { await Api.deactivateMembership(id); toast('Deactivated', 'ok'); loadMemberships(); }
     catch (e) { toast(e.message, 'err'); }
 }
@@ -1370,7 +1406,8 @@ async function deactivateMemb(id, name) {
 // ═══════════════════════════════════════════════════════════════
 async function loadPayments() {
     try {
-        const [memberships, stats] = await Promise.all([
+        const [payments, memberships, stats] = await Promise.all([
+            Api.getPayments().catch(() => []),
             Api.getMemberships().catch(() => []),
             Api.getStats().catch(() => null),
         ]);
@@ -1385,18 +1422,51 @@ async function loadPayments() {
             setText('pay-stat-members', stats.totalMembers ?? '—');
         }
 
-        // Transactions table — MembershipDto sorted by startAt desc
-        const rows = [...(memberships || [])].sort((a, b) => new Date(b.startAt || 0) - new Date(a.startAt || 0));
+        const moneyFor = (amount, currency) => currency === 'KHR'
+            ? 'KHR ' + Math.round(Number(amount || 0)).toLocaleString()
+            : fmtMoney(amount);
+        const statusBadge = (status) => {
+            if (status === 'Paid') return 'b-green badge-dot';
+            if (status === 'Pending') return 'b-amber';
+            if (status === 'Expired' || status === 'Cancelled') return 'b-red';
+            return 'b-muted';
+        };
+
+        // Transactions table — KHQR payment intents plus existing membership records
+        const rows = [
+            ...(payments || []).map(p => ({
+                id: p.paymentId,
+                reference: p.reference,
+                purpose: p.purpose,
+                orderName: p.orderName,
+                amount: p.amount,
+                currency: p.currency,
+                date: p.createdAt,
+                status: p.status,
+                md5Hash: p.md5Hash,
+                isKhqr: true,
+            })),
+            ...(memberships || []).map(m => ({
+                reference: `MEM-${m.membershipId}`,
+                purpose: m.type,
+                amount: m.price,
+                currency: 'USD',
+                date: m.startAt,
+                status: m.isActive ? 'Paid' : 'Expired',
+                isKhqr: false,
+            })),
+        ].sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
         if (rows.length) {
-            setHTML('pay-tbody', rows.slice(0, 20).map(m => `<tr>
-        <td>${m.clientName || '—'}</td>
-        <td><span class="badge ${planBadge(m.type)}">${m.type || '—'}</span></td>
-        <td class="fw6">${fmtMoney(m.price)}</td>
-        <td class="text-muted">${fmtDate(m.startAt)}</td>
-        <td><span class="badge ${m.isActive ? 'b-green badge-dot' : 'b-muted'}">${m.isActive ? 'Active' : 'Expired'}</span></td>
+            setHTML('pay-tbody', rows.slice(0, 30).map(p => `<tr>
+        <td class="fw6">${p.reference || '—'}${p.orderName ? `<div class="text-muted" style="font-size:10px">${p.orderName}</div>` : ''}${p.md5Hash ? `<div class="text-muted" style="font-size:10px;word-break:break-all">MD5 ${p.md5Hash}</div>` : ''}</td>
+        <td><span class="badge ${p.isKhqr ? 'b-blue' : planBadge(p.purpose)}">${p.purpose || '—'}</span></td>
+        <td class="fw6">${moneyFor(p.amount, p.currency)}</td>
+        <td class="text-muted">${fmtDate(p.date)}</td>
+        <td><span class="badge ${statusBadge(p.status)}">${p.status || '—'}</span></td>
+        <td style="text-align:right">${p.isKhqr && p.status === 'Pending' ? `<button class="btn btn-primary btn-sm" onclick="verifyKhqrPaymentAdmin(${p.id})">Verify MD5</button>` : ''}</td>
       </tr>`).join(''));
         } else {
-            setHTML('pay-tbody', '<tr><td colspan="5" class="text-muted" style="text-align:center;padding:32px">No transactions found.</td></tr>');
+            setHTML('pay-tbody', '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:32px">No transactions found.</td></tr>');
         }
 
         setTimeout(() => {
@@ -1418,7 +1488,20 @@ async function loadPayments() {
                 datasets: [{ data: revByMonth, fill: true, backgroundColor: 'rgba(29,185,122,.08)', borderColor: '#1db97a', borderWidth: 2, pointRadius: 3, tension: .4 }],
             }, { scales: { y: { ticks: { callback: v => '$' + v.toLocaleString() } } } });
         }, 80);
-    } catch (e) { setHTML('pay-tbody', apiError(e.message, 5)); }
+    } catch (e) { setHTML('pay-tbody', apiError(e.message, 6)); }
+}
+
+async function verifyKhqrPaymentAdmin(id) {
+    try {
+        const payment = await Api.verifyPayment(id);
+        const paidMessage = payment.purpose === 'Course'
+            ? 'Payment verified and course enrollment activated'
+            : 'Payment verified and membership activated';
+        toast(payment.status === 'Paid' ? paidMessage : 'Payment is still pending', payment.status === 'Paid' ? 'ok' : 'info');
+        loadPayments();
+        loadMemberships();
+        loadDashboard();
+    } catch (e) { toast(e.message, 'err'); }
 }
 
 // ═══════════════════════════════════════════════════════════════

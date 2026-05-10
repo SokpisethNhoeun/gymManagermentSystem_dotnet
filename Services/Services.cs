@@ -55,12 +55,14 @@ public class JwtService(IConfiguration config) : IJwtService
 // ── Auth Service ──────────────────────────────────────────
 public interface IAuthService
 {
-    Task<LoginResponse?> LoginAsync(string usernameOrEmail, string password);
+    Task<OtpStartResponse?> StartLoginAsync(string usernameOrEmail, string password);
+    Task<OtpStartResponse> StartRegistrationOtpAsync(User user);
+    Task<LoginResponse?> VerifyOtpAsync(string otpToken, string code);
 }
 
-public class AuthService(GymDbContext db, IJwtService jwt) : IAuthService
+public class AuthService(GymDbContext db, IJwtService jwt, IOtpService otp) : IAuthService
 {
-    public async Task<LoginResponse?> LoginAsync(string usernameOrEmail, string password)
+    public async Task<OtpStartResponse?> StartLoginAsync(string usernameOrEmail, string password)
     {
         var user = await db.Users
             .IgnoreQueryFilters()
@@ -70,6 +72,20 @@ public class AuthService(GymDbContext db, IJwtService jwt) : IAuthService
         if (user == null) return null;
         if (!user.IsActive) throw new UnauthorizedAccessException("Account is disabled.");
         if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash)) return null;
+
+        return await otp.CreateChallengeAsync(user, "Login");
+    }
+
+    public Task<OtpStartResponse> StartRegistrationOtpAsync(User user)
+        => otp.CreateChallengeAsync(user, "Register");
+
+    public async Task<LoginResponse?> VerifyOtpAsync(string otpToken, string code)
+    {
+        var result = await otp.VerifyAsync(otpToken, code);
+        if (result == null) return null;
+
+        var user = result.User;
+        if (!user.IsActive) throw new UnauthorizedAccessException("Account is disabled.");
 
         var token = jwt.GenerateToken(user, user.Role.RoleName);
         return new LoginResponse(token, user.UserId, user.FullName, user.Email, user.Role.RoleName, user.RoleId);

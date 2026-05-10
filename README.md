@@ -2,9 +2,11 @@
 
 Full-stack gym management app — .NET 8 API + vanilla JS frontend, all on **port 5000**.
 
+Now includes 6-digit email OTP verification for login/registration and Bakong KHQR payment intents for membership purchases.
+
 ---
 
-## Quick Start (3 steps)
+## Quick Start
 
 ### 1. Run the SQL script
 Open SQL Server Management Studio (SSMS) and run:
@@ -13,23 +15,15 @@ GymManagementDB.sql
 ```
 This creates the database, all tables, and seeds 10 members, 4 trainers, 5 courses, and sample data.
 
-### 2. Set real password hashes
-The SQL seed uses a placeholder hash. After starting the API once, visit:
-```
-http://localhost:5000/api/setup/seed-passwords
-```
-This sets proper BCrypt hashes for all users. You should see `"readyToLogin": true`.
-
-> ⚠️ **Delete `SetupController` from `Controllers/Controllers.cs` before production deployment.**
-
-### 3. Run the API
+### 2. Run the API
 ```bash
-cd GymApi
-dotnet run
+dotnet run --project GymApi.csproj
 ```
 Then open: **http://localhost:5000**
 
-**Default login:** `admin` / `Admin@123`
+**Default admin login:** `ahboy5518@gmail.com` / `sethadmin`
+
+For local development, `Email:Enabled` is `false`, so OTP codes are written to the API logs. OTP codes expire after 5 minutes. For production, configure Gmail SMTP in `.env` with a Gmail app password.
 
 ---
 
@@ -61,7 +55,9 @@ GymApi/
 
 | Method | Endpoint | Auth |
 |--------|----------|------|
-| POST | /api/auth/login | Public |
+| POST | /api/auth/login | Public, sends OTP |
+| POST | /api/auth/verify-otp | Public, returns JWT |
+| POST | /api/public/register | Public, creates client + sends OTP |
 | GET | /api/dashboard/stats | Admin, Staff |
 | GET/POST | /api/members | Admin, Staff |
 | GET | /api/members/{id}/checkins | Authenticated |
@@ -79,7 +75,13 @@ GymApi/
 | GET/POST | /api/skills | Authenticated |
 | GET/POST | /api/users | Admin, Staff |
 | PATCH | /api/users/{id}/reset-password | Admin |
+| GET | /api/payments | Admin, Staff |
+| POST | /api/payments/khqr/membership | Authenticated |
+| PATCH | /api/payments/{id}/confirm | Admin, Staff |
 | GET | /swagger | Public (dev) |
+
+KHQR note: the API generates a Bakong KHQR-compatible EMV payload and QR image. Actual bank settlement/webhook verification still depends on your Bakong provider credentials; staff can confirm a pending payment in the dashboard to activate the membership.
+The payment intent stores the KHQR MD5 and can call Bakong Open API `check_transaction_by_md5` when `Khqr__ApiBaseUrl`/`Khqr__ApiToken` or `BAKONG_BASE_URL`/`BAKONG_ACCESS_TOKEN` are configured. Payment QR codes expire after 10 minutes.
 
 ---
 
@@ -87,10 +89,23 @@ GymApi/
 
 - [ ] Change `JwtSettings:SecretKey` in `appsettings.json` to a strong random string
 - [ ] Update `ConnectionStrings:DefaultConnection` with production DB credentials
-- [ ] Delete `SetupController` from `Controllers/Controllers.cs`
+- [ ] Configure Gmail SMTP values in `.env` (`Email__Username`, `Email__Password`, `Email__FromEmail`)
+- [ ] Configure Bakong merchant values in `.env` (`Khqr__BakongAccountId`/`BAKONG_MERCHANT_ACCOUNT_ID`, `Khqr__MerchantName`/`BAKONG_MERCHANT_NAME`)
+- [ ] Configure Bakong Open API MD5 verification values (`Khqr__ApiBaseUrl`/`BAKONG_BASE_URL`, `Khqr__ApiToken`/`BAKONG_ACCESS_TOKEN`)
 - [ ] Set `ASPNETCORE_ENVIRONMENT=Production`
 - [ ] Change `appsettings.Production.json` log level to `Warning`
 - [ ] Configure a reverse proxy (nginx/IIS) in front of port 5000 for HTTPS
+
+## Docker Deployment
+
+Edit `.env`, then build and start:
+
+```bash
+docker compose build gympro
+docker compose up -d
+```
+
+The compose file starts SQL Server and the API. This project does not use EF migrations yet, so run `GymManagementDB.sql` against the SQL Server container or your production SQL Server before opening the app.
 
 ---
 

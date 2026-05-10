@@ -34,6 +34,7 @@ CREATE TABLE tbl_users (
     password_hash NVARCHAR(255) NOT NULL,
     role_id       INT           NOT NULL REFERENCES tbl_roles(role_id),
     is_active     BIT           NOT NULL DEFAULT 1,
+    email_verified_at DATETIME2 NULL,
     create_at     DATETIME2     NOT NULL DEFAULT GETUTCDATE()
 );
 
@@ -93,7 +94,7 @@ CREATE TABLE tbl_trainer_skill (
 CREATE TABLE tbl_trainer_skill_map (
     id         INT IDENTITY(1,1) PRIMARY KEY,
     trainer_id INT NOT NULL REFERENCES tbl_trainer(trainer_id)      ON DELETE CASCADE,
-    skill_id   INT NOT NULL REFERENCES tbl_trainer_skill(skill_id)  ON DELETE RESTRICT,
+    skill_id   INT NOT NULL REFERENCES tbl_trainer_skill(skill_id)  ON DELETE NO ACTION,
     UNIQUE (trainer_id, skill_id)
 );
 
@@ -117,8 +118,65 @@ CREATE TABLE tbl_courses_room (
     start_at      DATETIME2     NOT NULL,
     expire_at     DATETIME2     NOT NULL,
     amount        DECIMAL(18,2) NOT NULL DEFAULT 0,
+    is_approved   BIT           NOT NULL DEFAULT 0,
+    approved_by   INT           NULL,
+    approved_at   DATETIME2     NULL,
     UNIQUE (course_id, client_id)
 );
+
+-- ── Membership Plan Definitions ───────────────────────────
+CREATE TABLE tbl_membership_plans (
+    plan_id         INT IDENTITY(1,1) PRIMARY KEY,
+    type            NVARCHAR(55)  NOT NULL,
+    description     NVARCHAR(500) NULL,
+    price           DECIMAL(18,2) NOT NULL DEFAULT 0,
+    duration_months INT           NOT NULL DEFAULT 1,
+    is_active       BIT           NOT NULL DEFAULT 1,
+    created_at      DATETIME2     NOT NULL DEFAULT GETUTCDATE()
+);
+
+-- ── OTP Challenges ────────────────────────────────────────
+CREATE TABLE tbl_otp_challenges (
+    otp_challenge_id INT IDENTITY(1,1) PRIMARY KEY,
+    user_id          INT           NOT NULL REFERENCES tbl_users(user_id) ON DELETE CASCADE,
+    purpose          NVARCHAR(30)  NOT NULL,
+    otp_token_hash   NVARCHAR(128) NOT NULL UNIQUE,
+    code_hash        NVARCHAR(255) NOT NULL,
+    email            NVARCHAR(100) NOT NULL,
+    expires_at       DATETIME2     NOT NULL,
+    created_at       DATETIME2     NOT NULL DEFAULT GETUTCDATE(),
+    consumed_at      DATETIME2     NULL,
+    attempts         INT           NOT NULL DEFAULT 0
+);
+CREATE INDEX IX_tbl_otp_challenges_user_purpose_expires
+ON tbl_otp_challenges(user_id, purpose, expires_at);
+
+-- ── Payments / Bakong KHQR ────────────────────────────────
+CREATE TABLE tbl_payments (
+    payment_id          INT IDENTITY(1,1) PRIMARY KEY,
+    client_id           INT           NULL REFERENCES tbl_client_detail(client_id) ON DELETE SET NULL,
+    membership_id       INT           NULL REFERENCES tbl_client_memberships(membership_id) ON DELETE SET NULL,
+    enrollment_id       INT           NULL REFERENCES tbl_courses_room(enrollment_id) ON DELETE SET NULL,
+    purpose             NVARCHAR(30)  NOT NULL,
+    amount              DECIMAL(18,2) NOT NULL DEFAULT 0,
+    currency            NVARCHAR(3)   NOT NULL DEFAULT 'USD',
+    status              NVARCHAR(30)  NOT NULL DEFAULT 'Pending',
+    provider            NVARCHAR(30)  NOT NULL DEFAULT 'BakongKHQR',
+    reference           NVARCHAR(80)  NOT NULL UNIQUE,
+    provider_reference  NVARCHAR(255) NULL,
+    md5_hash            NVARCHAR(32)  NULL,
+    bakong_account_id   NVARCHAR(255) NULL,
+    merchant_name       NVARCHAR(100) NULL,
+    merchant_city       NVARCHAR(100) NULL,
+    qr_payload          NVARCHAR(2048) NULL,
+    qr_image_data_uri   NVARCHAR(MAX) NULL,
+    metadata_json       NVARCHAR(MAX) NULL,
+    created_at          DATETIME2     NOT NULL DEFAULT GETUTCDATE(),
+    expires_at          DATETIME2     NOT NULL,
+    paid_at             DATETIME2     NULL
+);
+CREATE INDEX IX_tbl_payments_client_status_created
+ON tbl_payments(client_id, status, created_at);
 GO
 
 -- ============================================================
@@ -128,11 +186,11 @@ GO
 -- Roles: 1=Admin, 2=Staff, 3=Trainer, 4=Client
 INSERT INTO tbl_roles (role_name) VALUES ('Admin'),('Staff'),('Trainer'),('Client');
 
--- Admin user  (password: Admin@123)
+-- Admin user  (password: sethadmin)
 INSERT INTO tbl_users (full_name, username, gender, email, password_hash, role_id, is_active)
 VALUES (
-    'Admin User', 'admin', 'M', 'admin@gympro.kh',
-    '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS',
+    'Admin User', 'admin', 'M', 'ahboy5518@gmail.com',
+    '$2b$11$KFquhYGeIT50i6/L3d40Ied/zB9cy4pn4NWvpqSCbdl7ju.xtXH9y',
     1, 1
 );
 
@@ -140,17 +198,17 @@ VALUES (
 INSERT INTO tbl_users (full_name, username, gender, email, password_hash, role_id, is_active)
 VALUES (
     'Srey Neang', 'srey.neang', 'F', 'srey@gympro.kh',
-    '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS',
+    '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6',
     2, 1
 );
 INSERT INTO tbl_staff_detail (user_id, phone, place_of_birth, salary) VALUES (2, '+855 12 000 001', 'Phnom Penh', 450.00);
 
 -- Trainer users
 INSERT INTO tbl_users (full_name, username, gender, email, password_hash, role_id, is_active)
-VALUES ('Kosal Pich',    'kosal.pich',    'M', 'kosal@gympro.kh',    '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 3, 1),
-       ('Malis Chan',    'malis.chan',     'F', 'malis@gympro.kh',    '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 3, 1),
-       ('Bunna Sok',     'bunna.sok',      'M', 'bunna@gympro.kh',    '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 3, 1),
-       ('Leakhena Keo',  'leakhena.keo',   'F', 'leakhena@gympro.kh', '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 3, 1);
+VALUES ('Kosal Pich',    'kosal.pich',    'M', 'kosal@gympro.kh',    '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 3, 1),
+       ('Malis Chan',    'malis.chan',     'F', 'malis@gympro.kh',    '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 3, 1),
+       ('Bunna Sok',     'bunna.sok',      'M', 'bunna@gympro.kh',    '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 3, 1),
+       ('Leakhena Keo',  'leakhena.keo',   'F', 'leakhena@gympro.kh', '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 3, 1);
 
 INSERT INTO tbl_trainer (user_id, is_active) VALUES (3,1),(4,1),(5,1),(6,1);
 
@@ -162,16 +220,16 @@ INSERT INTO tbl_trainer_skill_map (trainer_id, skill_id) VALUES (1,1),(1,5),(2,2
 
 -- Client users (10 sample members)
 INSERT INTO tbl_users (full_name, username, gender, email, password_hash, role_id, is_active) VALUES
-('Sophea Kem',    'sophea.kem',    'F', 'sophea@email.com',   '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Dara Chan',     'dara.chan',     'M', 'dara@email.com',     '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Raksmey Sok',   'raksmey.sok',   'F', 'raksmey@email.com',  '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Pisey Lim',     'pisey.lim',     'F', 'pisey@email.com',    '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Vichet Ros',    'vichet.ros',    'M', 'vichet@email.com',   '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Chanthy Pen',   'chanthy.pen',   'F', 'chanthy@email.com',  '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Rithy Heng',    'rithy.heng',    'M', 'rithy@email.com',    '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Dany Phon',     'dany.phon',     'M', 'dany@email.com',     '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Sreymom Tep',   'sreymom.tep',   'F', 'sreymom@email.com',  '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1),
-('Makara Yem',    'makara.yem',    'M', 'makara@email.com',   '$2a$11$K5L6eX9zQvHmNpR3wTyUOuYkJdF8nCbGsVxZ7qWiMlA4P1oEhH2eS', 4, 1);
+('Sophea Kem',    'sophea.kem',    'F', 'sophea@email.com',   '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Dara Chan',     'dara.chan',     'M', 'dara@email.com',     '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Raksmey Sok',   'raksmey.sok',   'F', 'raksmey@email.com',  '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Pisey Lim',     'pisey.lim',     'F', 'pisey@email.com',    '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Vichet Ros',    'vichet.ros',    'M', 'vichet@email.com',   '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Chanthy Pen',   'chanthy.pen',   'F', 'chanthy@email.com',  '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Rithy Heng',    'rithy.heng',    'M', 'rithy@email.com',    '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Dany Phon',     'dany.phon',     'M', 'dany@email.com',     '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Sreymom Tep',   'sreymom.tep',   'F', 'sreymom@email.com',  '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1),
+('Makara Yem',    'makara.yem',    'M', 'makara@email.com',   '$2b$11$CQi/QdqzlF7QO6mjmYz6Aeu4dw7XqRkovUqFI5NaK/H1Mrodt/xy6', 4, 1);
 
 INSERT INTO tbl_client_detail (user_id, dob, phone, emergency_contact) VALUES
 (7,  '1995-04-12', '+855 12 111 001', 'Kem Sokha · +855 12 111 002'),
@@ -187,6 +245,11 @@ INSERT INTO tbl_client_detail (user_id, dob, phone, emergency_contact) VALUES
 
 -- Memberships (mix of types & dates for realistic charts)
 DECLARE @today DATETIME2 = GETUTCDATE();
+INSERT INTO tbl_membership_plans (type, description, price, duration_months, is_active) VALUES
+('Monthly',   'Flexible month-to-month access.', 29.99, 1, 1),
+('Quarterly', 'Three months with better value.', 79.99, 3, 1),
+('Annual',    'Full-year membership package.', 249.00, 12, 1);
+
 INSERT INTO tbl_client_memberships (client_id, type, price, start_at, expire_at, is_active) VALUES
 (1, 'Annual',    249.00, DATEADD(month,-2,@today), DATEADD(month,10,@today), 1),
 (2, 'Monthly',    29.99, DATEADD(month,-1,@today), DATEADD(month, 0,@today), 1),
@@ -237,15 +300,7 @@ INSERT INTO tbl_courses_room (course_id, client_id, start_at, expire_at, amount)
 (2,10, DATEADD(month,-1,@today), DATEADD(month,2,@today),  35.00);
 GO
 
--- ============================================================
--- Re-hash all passwords correctly (BCrypt workFactor 11)
--- The hash above is a placeholder — run the API once then
--- call GET /api/setup/seed-passwords to set real BCrypt hashes,
--- then DELETE the SetupController from Controllers.cs
--- OR run this after the app sets real hashes via EF.
--- ============================================================
 PRINT 'GymManagementDB created successfully.';
-PRINT 'Default login: admin / Admin@123';
-PRINT 'After first run, visit http://localhost:5000/api/setup/seed-passwords to set BCrypt hashes.';
-PRINT 'Then delete SetupController from Controllers.cs before going to production.';
+PRINT 'Default login: ahboy5518@gmail.com / sethadmin';
+PRINT 'OTP is required after password login; local development writes OTP codes to API logs when Email:Enabled=false.';
 GO

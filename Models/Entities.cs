@@ -20,11 +20,13 @@ public class User
     [Required, MaxLength(255)] public string PasswordHash { get; set; } = "";
     public int RoleId { get; set; }
     public bool IsActive { get; set; } = true;
+    public DateTime? EmailVerifiedAt { get; set; }
     public DateTime CreateAt { get; set; } = DateTime.UtcNow;
     [ForeignKey(nameof(RoleId))] public Role Role { get; set; } = null!;
     public StaffDetail? StaffDetail { get; set; }
     public ClientDetail? ClientDetail { get; set; }
     public Trainer? Trainer { get; set; }
+    public ICollection<OtpChallenge> OtpChallenges { get; set; } = [];
 }
 
 public class StaffDetail
@@ -139,4 +141,47 @@ public class MembershipPlan
     public int DurationMonths { get; set; } = 1;
     public bool IsActive { get; set; } = true;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+public class OtpChallenge
+{
+    [Key] public int OtpChallengeId { get; set; }
+    public int UserId { get; set; }
+    [Required, MaxLength(30)] public string Purpose { get; set; } = "";
+    [Required, MaxLength(128)] public string OtpTokenHash { get; set; } = "";
+    [Required, MaxLength(255)] public string CodeHash { get; set; } = "";
+    [Required, MaxLength(100)] public string Email { get; set; } = "";
+    public DateTime ExpiresAt { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? ConsumedAt { get; set; }
+    public int Attempts { get; set; }
+    [ForeignKey(nameof(UserId))] public User User { get; set; } = null!;
+}
+
+public class Payment
+{
+    [Key] public int PaymentId { get; set; }
+    public int? ClientId { get; set; }
+    public int? MembershipId { get; set; }
+    public int? EnrollmentId { get; set; }
+    [Required, MaxLength(30)] public string Purpose { get; set; } = "";
+    [Column(TypeName = "decimal(18,2)")] public decimal Amount { get; set; }
+    [Required, MaxLength(3)] public string Currency { get; set; } = "USD";
+    [Required, MaxLength(30)] public string Status { get; set; } = "Pending";
+    [Required, MaxLength(30)] public string Provider { get; set; } = "BakongKHQR";
+    [Required, MaxLength(80)] public string Reference { get; set; } = "";
+    [MaxLength(255)] public string? ProviderReference { get; set; }
+    [MaxLength(32)] public string? Md5Hash { get; set; }
+    [MaxLength(255)] public string? BakongAccountId { get; set; }
+    [MaxLength(100)] public string? MerchantName { get; set; }
+    [MaxLength(100)] public string? MerchantCity { get; set; }
+    [MaxLength(2048)] public string? QrPayload { get; set; }
+    public string? QrImageDataUri { get; set; }
+    public string? MetadataJson { get; set; }
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime ExpiresAt { get; set; }
+    public DateTime? PaidAt { get; set; }
+    [ForeignKey(nameof(ClientId))] public ClientDetail? Client { get; set; }
+    [ForeignKey(nameof(MembershipId))] public ClientMembership? Membership { get; set; }
+    [ForeignKey(nameof(EnrollmentId))] public CourseRoom? Enrollment { get; set; }
 }

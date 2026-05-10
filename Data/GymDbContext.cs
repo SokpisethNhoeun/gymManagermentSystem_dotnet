@@ -17,6 +17,8 @@ public class GymDbContext(DbContextOptions<GymDbContext> options) : DbContext(op
     public DbSet<Course> Courses { get; set; }
     public DbSet<CourseRoom> CourseRooms { get; set; }
     public DbSet<MembershipPlan> MembershipPlans { get; set; }
+    public DbSet<OtpChallenge> OtpChallenges { get; set; }
+    public DbSet<Payment> Payments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -46,6 +48,7 @@ public class GymDbContext(DbContextOptions<GymDbContext> options) : DbContext(op
             e.Property(x => x.PasswordHash).HasColumnName("password_hash").HasMaxLength(255).IsRequired();
             e.Property(x => x.RoleId).HasColumnName("role_id");
             e.Property(x => x.IsActive).HasColumnName("is_active");
+            e.Property(x => x.EmailVerifiedAt).HasColumnName("email_verified_at");
             e.Property(x => x.CreateAt).HasColumnName("create_at");
             e.HasIndex(x => x.Username).IsUnique();
             e.HasIndex(x => x.Email).IsUnique();
@@ -53,15 +56,15 @@ public class GymDbContext(DbContextOptions<GymDbContext> options) : DbContext(op
             // Global filter: hide inactive users everywhere (use IgnoreQueryFilters() to bypass)
             e.HasQueryFilter(x => x.IsActive);
             e.HasData(
-                // admin → Admin@123
+                // admin → sethadmin
                 new GymApi.Models.User
                 {
                     UserId = 1,
                     FullName = "Admin User",
                     Username = "admin",
                     Gender = "M",
-                    Email = "admin@gym.local",
-                    PasswordHash = "$2b$11$PZPY3JVjNo.qURLF/K3hZ.Yokx6IS7rfjQ3rRHsaN4RdGjw/kAOiW",
+                    Email = "ahboy5518@gmail.com",
+                    PasswordHash = "$2b$11$KFquhYGeIT50i6/L3d40Ied/zB9cy4pn4NWvpqSCbdl7ju.xtXH9y",
                     RoleId = 1,
                     IsActive = true,
                     CreateAt = new DateTime(2024, 1, 1, 0, 0, 0, DateTimeKind.Utc)
@@ -225,10 +228,60 @@ public class GymDbContext(DbContextOptions<GymDbContext> options) : DbContext(op
             e.Property(x => x.PlanId).HasColumnName("plan_id");
             e.Property(x => x.Type).HasColumnName("type").IsRequired();
             e.Property(x => x.Description).HasColumnName("description");
-            e.Property(x => x.Price).HasColumnName("price");
+            e.Property(x => x.Price).HasColumnName("price").HasColumnType("decimal(18,2)");
             e.Property(x => x.DurationMonths).HasColumnName("duration_months");
             e.Property(x => x.IsActive).HasColumnName("is_active");
             e.Property(x => x.CreatedAt).HasColumnName("created_at");
+        });
+
+        mb.Entity<OtpChallenge>(e => {
+            e.ToTable("tbl_otp_challenges");
+            e.HasKey(x => x.OtpChallengeId);
+            e.Property(x => x.OtpChallengeId).HasColumnName("otp_challenge_id");
+            e.Property(x => x.UserId).HasColumnName("user_id");
+            e.Property(x => x.Purpose).HasColumnName("purpose").HasMaxLength(30).IsRequired();
+            e.Property(x => x.OtpTokenHash).HasColumnName("otp_token_hash").HasMaxLength(128).IsRequired();
+            e.Property(x => x.CodeHash).HasColumnName("code_hash").HasMaxLength(255).IsRequired();
+            e.Property(x => x.Email).HasColumnName("email").HasMaxLength(100).IsRequired();
+            e.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.ConsumedAt).HasColumnName("consumed_at");
+            e.Property(x => x.Attempts).HasColumnName("attempts");
+            e.HasIndex(x => x.OtpTokenHash).IsUnique();
+            e.HasIndex(x => new { x.UserId, x.Purpose, x.ExpiresAt });
+            e.HasOne(x => x.User).WithMany(u => u.OtpChallenges)
+                .HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+
+        mb.Entity<Payment>(e => {
+            e.ToTable("tbl_payments");
+            e.HasKey(x => x.PaymentId);
+            e.Property(x => x.PaymentId).HasColumnName("payment_id");
+            e.Property(x => x.ClientId).HasColumnName("client_id");
+            e.Property(x => x.MembershipId).HasColumnName("membership_id");
+            e.Property(x => x.EnrollmentId).HasColumnName("enrollment_id");
+            e.Property(x => x.Purpose).HasColumnName("purpose").HasMaxLength(30).IsRequired();
+            e.Property(x => x.Amount).HasColumnName("amount").HasColumnType("decimal(18,2)");
+            e.Property(x => x.Currency).HasColumnName("currency").HasMaxLength(3).IsRequired();
+            e.Property(x => x.Status).HasColumnName("status").HasMaxLength(30).IsRequired();
+            e.Property(x => x.Provider).HasColumnName("provider").HasMaxLength(30).IsRequired();
+            e.Property(x => x.Reference).HasColumnName("reference").HasMaxLength(80).IsRequired();
+            e.Property(x => x.ProviderReference).HasColumnName("provider_reference").HasMaxLength(255);
+            e.Property(x => x.Md5Hash).HasColumnName("md5_hash").HasMaxLength(32);
+            e.Property(x => x.BakongAccountId).HasColumnName("bakong_account_id").HasMaxLength(255);
+            e.Property(x => x.MerchantName).HasColumnName("merchant_name").HasMaxLength(100);
+            e.Property(x => x.MerchantCity).HasColumnName("merchant_city").HasMaxLength(100);
+            e.Property(x => x.QrPayload).HasColumnName("qr_payload").HasMaxLength(2048);
+            e.Property(x => x.QrImageDataUri).HasColumnName("qr_image_data_uri");
+            e.Property(x => x.MetadataJson).HasColumnName("metadata_json");
+            e.Property(x => x.CreatedAt).HasColumnName("created_at");
+            e.Property(x => x.ExpiresAt).HasColumnName("expires_at");
+            e.Property(x => x.PaidAt).HasColumnName("paid_at");
+            e.HasIndex(x => x.Reference).IsUnique();
+            e.HasIndex(x => new { x.ClientId, x.Status, x.CreatedAt });
+            e.HasOne(x => x.Client).WithMany().HasForeignKey(x => x.ClientId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.Membership).WithMany().HasForeignKey(x => x.MembershipId).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne(x => x.Enrollment).WithMany().HasForeignKey(x => x.EnrollmentId).OnDelete(DeleteBehavior.SetNull);
         });
     }
 

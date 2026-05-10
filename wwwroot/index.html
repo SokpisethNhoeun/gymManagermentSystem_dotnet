@@ -28,6 +28,8 @@ input:focus{border-color:#e8621a;box-shadow:0 0 0 3px rgba(232,98,26,.15)}
 .footer a{color:#e8621a;text-decoration:none}
 .home-link{display:block;text-align:center;margin-top:10px;font-size:12px;color:#545e74;text-decoration:none}
 .home-link:hover{color:#e8621a}
+.otp-panel{display:none;margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:18px}
+.otp-note{font-size:12.5px;line-height:1.5;color:#7a8598;margin-bottom:12px}
 </style>
 </head>
 <body>
@@ -52,12 +54,23 @@ input:focus{border-color:#e8621a;box-shadow:0 0 0 3px rgba(232,98,26,.15)}
     Sign In
   </button>
 
-  <div class="footer">Default: admin / Admin@123</div>
+  <div class="otp-panel" id="otp-panel">
+    <div class="otp-note" id="otp-note">Enter the 6-digit verification code sent to your email.</div>
+    <label>Verification Code</label>
+    <input type="text" id="otp-code" placeholder="000000" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+    <button class="btn" id="otp-btn" onclick="verifyOtp()">Verify Code</button>
+  </div>
   <a class="home-link" href="home.html">← View public site</a>
 </div>
 
 <script>
-document.addEventListener('keydown', e => { if(e.key === 'Enter') doLogin(); });
+let pendingOtp = null;
+let pendingUsername = '';
+document.addEventListener('keydown', e => {
+  if(e.key !== 'Enter') return;
+  if (pendingOtp) verifyOtp();
+  else doLogin();
+});
 
 async function doLogin() {
   const u = document.getElementById('username').value.trim();
@@ -79,26 +92,16 @@ async function doLogin() {
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json.message || json.Message || 'Invalid credentials.');
 
-    // ApiResponse<LoginResponse> → { success, message, data: { token, userId, fullName, email, role, roleId } }
+    // ApiResponse<OtpStartResponse> → { data: { otpToken, email, expiresAt, purpose } }
     const d = json.data || json;
-    const token = d.token || d.Token;
-    if (!token) throw new Error('No token in response — check API.');
-
-    // Persist all fields
-    localStorage.setItem('gympro-token',  token);
-    localStorage.setItem('gympro-user',   d.fullName  || d.FullName  || u);
-    localStorage.setItem('gympro-role',   d.role      || d.Role      || '');
-    localStorage.setItem('gympro-userid', String(d.userId  || d.UserId  || 0));
-    localStorage.setItem('gympro-roleid', String(d.roleId  || d.RoleId  || 0));
-
-    // Role-based redirect — case-insensitive
-    const role = (d.role || d.Role || '').trim().toLowerCase();
-    if (role === 'client' || role === 'trainer') {
-      window.location.replace('portal.html');
-    } else {
-      // Admin, Staff → management dashboard
-      window.location.replace('app.html');
-    }
+    pendingOtp = d.otpToken || d.OtpToken;
+    pendingUsername = u;
+    if (!pendingOtp) throw new Error('No OTP token in response — check API.');
+    document.getElementById('otp-panel').style.display = 'block';
+    document.getElementById('otp-note').textContent = 'Code sent to ' + (d.email || d.Email || 'your email') + '. It expires soon.';
+    document.getElementById('otp-code').focus();
+    btn.disabled = false;
+    btn.textContent = 'Send New Code';
   } catch(e) {
     const msg = e.message === 'Failed to fetch'
       ? 'Cannot reach API — is dotnet running on port 5000?'
@@ -107,6 +110,41 @@ async function doLogin() {
     btn.disabled = false;
     btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Sign In';
   }
+}
+
+async function verifyOtp() {
+  const code = document.getElementById('otp-code').value.trim();
+  const btn = document.getElementById('otp-btn');
+  if (!pendingOtp) { showErr('Start login first.'); return; }
+  if (!/^\d{6}$/.test(code)) { showErr('Enter the 6-digit code.'); return; }
+  btn.disabled = true;
+  btn.textContent = 'Verifying...';
+  try {
+    const res = await fetch('/api/auth/verify-otp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ otpToken: pendingOtp, code })
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.message || json.Message || 'Invalid verification code.');
+    persistSession(json.data || json);
+  } catch(e) {
+    showErr(e.message);
+    btn.disabled = false;
+    btn.textContent = 'Verify Code';
+  }
+}
+
+function persistSession(d) {
+  const token = d.token || d.Token;
+  if (!token) throw new Error('No token in response — check API.');
+  localStorage.setItem('gympro-token',  token);
+  localStorage.setItem('gympro-user',   d.fullName  || d.FullName  || pendingUsername);
+  localStorage.setItem('gympro-role',   d.role      || d.Role      || '');
+  localStorage.setItem('gympro-userid', String(d.userId  || d.UserId  || 0));
+  localStorage.setItem('gympro-roleid', String(d.roleId  || d.RoleId  || 0));
+  const role = (d.role || d.Role || '').trim().toLowerCase();
+  window.location.replace(role === 'client' || role === 'trainer' ? 'portal.html' : 'app.html');
 }
 
 function showErr(msg) { const e = document.getElementById('err'); e.textContent = msg; e.style.display = 'block'; }

@@ -94,6 +94,13 @@ input, select, textarea {
     font-size: 11.5px
 }
 
+.ui-icon {
+    width: 1em;
+    height: 1em;
+    display: block;
+    flex-shrink: 0
+}
+
 /* ── Utilities ── */
 .flex {
     display: flex;
@@ -1000,7 +1007,71 @@ td {
 
 select.form-input {
     appearance: none;
-    cursor: pointer
+    -webkit-appearance: none;
+    cursor: pointer;
+    min-height: 38px;
+    padding-right: 38px;
+    border-radius: 10px;
+    background-color: var(--s2);
+    background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%238892aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    transition: background-color var(--dur) var(--ease),border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)
+}
+
+    select.form-input:hover:not(:disabled) {
+        background-color: var(--s3);
+        border-color: var(--border3)
+    }
+
+    select.form-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--glow2), inset 0 1px 0 rgba(255,255,255,.04)
+    }
+
+    select.form-input:disabled {
+        color: var(--text3);
+        cursor: not-allowed;
+        opacity: .76
+    }
+
+select:not(.form-input) {
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    min-height: 38px;
+    padding: 8px 38px 8px 11px;
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    background-color: var(--s2);
+    background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%238892aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 16px 16px;
+    color: var(--text);
+    font-size: 12.5px;
+    outline: none;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    transition: background-color var(--dur) var(--ease),border-color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)
+}
+
+    select:not(.form-input):hover:not(:disabled) {
+        background-color: var(--s3);
+        border-color: var(--border3)
+    }
+
+    select:not(.form-input):focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--glow2), inset 0 1px 0 rgba(255,255,255,.04)
+    }
+
+    select:not(.form-input):disabled {
+        color: var(--text3);
+        cursor: not-allowed;
+        opacity: .76
+    }
 }
 
 textarea.form-input {
@@ -1486,6 +1557,44 @@ textarea.form-input {
     gap: 8px;
     margin-top: 20px;
     justify-content: flex-end
+}
+
+.popup-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px
+}
+
+.popup-title-row .modal-title {
+    margin-bottom: 0
+}
+
+.popup-icon {
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    background: var(--amber-bg);
+    color: var(--amber)
+}
+
+.popup-icon.danger {
+    background: var(--red-bg);
+    color: var(--red)
+}
+
+.popup-icon.info {
+    background: var(--blue-bg);
+    color: var(--blue)
+}
+
+.popup-icon.ok {
+    background: var(--green-bg);
+    color: var(--green)
 }
 
 /* ── Toast ── */

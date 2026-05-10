@@ -5,6 +5,11 @@ using GymApi.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace GymApi.Controllers;
 
@@ -20,10 +25,27 @@ public class AuthController(IAuthService auth) : ControllerBase
         if (!ModelState.IsValid) return BadRequest(ModelState);
         try
         {
-            var result = await auth.LoginAsync(req.Username, req.Password);
+            var result = await auth.StartLoginAsync(req.Username, req.Password);
             if (result == null)
                 return Unauthorized(ApiResponse<string>.Fail("Invalid username or password."));
-            return Ok(ApiResponse<LoginResponse>.Ok(result, "Login successful."));
+            return Ok(ApiResponse<OtpStartResponse>.Ok(result, "Verification code sent."));
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(ApiResponse<string>.Fail(ex.Message));
+        }
+    }
+
+    [HttpPost("verify-otp")]
+    public async Task<IActionResult> VerifyOtp([FromBody] VerifyOtpRequest req)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        try
+        {
+            var result = await auth.VerifyOtpAsync(req.OtpToken, req.Code);
+            if (result == null)
+                return Unauthorized(ApiResponse<string>.Fail("Invalid verification code."));
+            return Ok(ApiResponse<LoginResponse>.Ok(result, "Login verified."));
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -515,8 +537,8 @@ public class EnrollmentsController(GymDbContext db) : ControllerBase
         return Ok(ApiResponse<List<EnrollmentDto>>.Ok(list.Select(ToDto).ToList()));
     }
 
-    // POST /api/enrollments — Client submits enrollment request (pending approval)
-    // Admin/Staff enroll is auto-approved
+    // POST /api/enrollments — Admin/Staff direct enrollment only.
+    // Clients buy courses through /api/payments/khqr/course so payment verification activates enrollment.
     [HttpPost]
     public async Task<IActionResult> Enroll([FromBody] CreateEnrollmentRequest req)
     {
@@ -528,9 +550,7 @@ public class EnrollmentsController(GymDbContext db) : ControllerBase
 
         if (role == "Client")
         {
-            var myClient = await db.ClientDetails.FirstOrDefaultAsync(c => c.UserId == callerId);
-            if (myClient == null || myClient.ClientId != req.ClientId)
-                return Forbid();
+            return BadRequest(ApiResponse<string>.Fail("Use KHQR payment to buy courses. Enrollment activates after payment verification."));
         }
 
         if (req.ExpireAt <= req.StartAt)
@@ -538,7 +558,6 @@ public class EnrollmentsController(GymDbContext db) : ControllerBase
         if (await db.CourseRooms.AnyAsync(e => e.CourseId == req.CourseId && e.ClientId == req.ClientId))
             return Conflict(ApiResponse<string>.Fail("Already enrolled."));
 
-        bool autoApprove = role == "Admin" || role == "Staff";
         var enrollment = new CourseRoom
         {
             CourseId = req.CourseId,
@@ -546,13 +565,12 @@ public class EnrollmentsController(GymDbContext db) : ControllerBase
             StartAt = req.StartAt,
             ExpireAt = req.ExpireAt,
             Amount = req.Amount,
-            IsApproved = autoApprove,
-            ApprovedBy = autoApprove ? callerId : null,
-            ApprovedAt = autoApprove ? DateTime.UtcNow : null,
+            IsApproved = true,
+            ApprovedBy = callerId == 0 ? null : callerId,
+            ApprovedAt = DateTime.UtcNow,
         };
         db.CourseRooms.Add(enrollment); await db.SaveChangesAsync();
-        var msg = autoApprove ? "Enrolled and approved." : "Enrollment request submitted — awaiting staff approval.";
-        return Ok(ApiResponse<object>.Ok(new { enrollment.EnrollmentId, enrollment.IsApproved }, msg));
+        return Ok(ApiResponse<object>.Ok(new { enrollment.EnrollmentId, enrollment.IsApproved }, "Enrolled and approved."));
     }
 
     // PATCH /api/enrollments/{id}/approve — Staff/Admin approves or rejects
@@ -691,11 +709,299 @@ public class MembershipPlansController(GymDbContext db) : ControllerBase
 }
 
 // ═══════════════════════════════════════════════════════════════
+// PAYMENTS — Bakong KHQR payment intents
+// ═══════════════════════════════════════════════════════════════
+[ApiController, Route("api/payments"), Authorize]
+public class PaymentsController(
+    GymDbContext db,
+    IKhqrService khqr,
+    IQrCodeService qrCode,
+    IKhqrTransactionVerifier khqrVerifier,
+    IOptions<KhqrOptions> khqrOptions) : ControllerBase
+{
+    private record MembershipPaymentMetadata(string Type, DateTime StartAt, DateTime ExpireAt);
+    private record CoursePaymentMetadata(int CourseId, string CourseName, DateTime StartAt, DateTime ExpireAt);
+
+    [HttpGet, Authorize(Roles = "Admin,Staff")]
+    public async Task<IActionResult> GetAll([FromQuery] string? status = null)
+    {
+        await ExpirePendingPaymentsAsync();
+        var q = db.Payments.AsQueryable();
+        if (!string.IsNullOrWhiteSpace(status))
+            q = q.Where(p => p.Status == status);
+
+        var payments = await q.OrderByDescending(p => p.CreatedAt).Take(100).ToListAsync();
+        return Ok(ApiResponse<List<KhqrPaymentDto>>.Ok(payments.Select(ToDto).ToList()));
+    }
+
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetById(int id)
+    {
+        await ExpirePendingPaymentsAsync(id);
+        var payment = await db.Payments.FirstOrDefaultAsync(p => p.PaymentId == id);
+        if (payment == null) return NotFound(ApiResponse<string>.Fail("Payment not found."));
+        if (!await CanAccessClientAsync(payment.ClientId))
+            return Forbid();
+        return Ok(ApiResponse<KhqrPaymentDto>.Ok(ToDto(payment)));
+    }
+
+    [HttpGet("my")]
+    public async Task<IActionResult> GetMine()
+    {
+        await ExpirePendingPaymentsAsync();
+        var clientId = await GetCurrentClientIdAsync();
+        if (clientId == null)
+            return NotFound(ApiResponse<string>.Fail("No member record for this account."));
+
+        var payments = await db.Payments
+            .Where(p => p.ClientId == clientId.Value)
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(100)
+            .ToListAsync();
+
+        return Ok(ApiResponse<List<KhqrPaymentDto>>.Ok(payments.Select(ToDto).ToList()));
+    }
+
+    [HttpPost("khqr/membership")]
+    public async Task<IActionResult> CreateMembershipKhqr([FromBody] KhqrMembershipPaymentRequest req)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await CanAccessClientAsync(req.ClientId))
+            return Forbid();
+
+        var clientExists = await db.ClientDetails.AnyAsync(c => c.ClientId == req.ClientId);
+        if (!clientExists) return NotFound(ApiResponse<string>.Fail("Member not found."));
+
+        var plan = req.PlanId.HasValue
+            ? await db.MembershipPlans.FirstOrDefaultAsync(p => p.PlanId == req.PlanId.Value && p.IsActive)
+            : await db.MembershipPlans.FirstOrDefaultAsync(p => p.Type == req.Type && p.IsActive);
+        if (plan == null)
+            return BadRequest(ApiResponse<string>.Fail("Selected membership plan is no longer available."));
+
+        var startAt = DateTime.UtcNow.Date;
+        var expireAt = startAt.AddMonths(Math.Max(1, plan.DurationMonths));
+        var metadata = JsonSerializer.Serialize(new MembershipPaymentMetadata(plan.Type, startAt, expireAt));
+        var payment = CreateKhqrPayment(req.ClientId, "Membership", plan.Price, req.Currency, metadata);
+
+        db.Payments.Add(payment);
+        await db.SaveChangesAsync();
+        return Ok(ApiResponse<KhqrPaymentDto>.Ok(ToDto(payment), "Scan the KHQR code to pay with Bakong."));
+    }
+
+    [HttpPost("khqr/course")]
+    public async Task<IActionResult> CreateCourseKhqr([FromBody] KhqrCoursePaymentRequest req)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!await CanAccessClientAsync(req.ClientId))
+            return Forbid();
+
+        var clientExists = await db.ClientDetails.AnyAsync(c => c.ClientId == req.ClientId);
+        if (!clientExists) return NotFound(ApiResponse<string>.Fail("Member not found."));
+
+        var course = await db.Courses.FirstOrDefaultAsync(c => c.CourseId == req.CourseId && c.IsActive);
+        if (course == null) return NotFound(ApiResponse<string>.Fail("Course not found or inactive."));
+
+        if (await db.CourseRooms.AnyAsync(e => e.CourseId == req.CourseId && e.ClientId == req.ClientId))
+            return Conflict(ApiResponse<string>.Fail("Already enrolled in this course."));
+
+        var startAt = DateTime.UtcNow.Date;
+        var expireAt = startAt.AddMonths(3);
+        var metadata = JsonSerializer.Serialize(new CoursePaymentMetadata(course.CourseId, course.CourseName, startAt, expireAt));
+        var payment = CreateKhqrPayment(req.ClientId, "Course", course.Price, req.Currency, metadata);
+
+        db.Payments.Add(payment);
+        await db.SaveChangesAsync();
+        return Ok(ApiResponse<KhqrPaymentDto>.Ok(ToDto(payment), "Scan the KHQR code to pay with Bakong."));
+    }
+
+    [HttpPatch("{id}/verify")]
+    public async Task<IActionResult> VerifyByMd5(int id)
+    {
+        await ExpirePendingPaymentsAsync(id);
+        var payment = await db.Payments.AsTracking().FirstOrDefaultAsync(p => p.PaymentId == id);
+        if (payment == null) return NotFound(ApiResponse<string>.Fail("Payment not found."));
+        if (!await CanAccessClientAsync(payment.ClientId)) return Forbid();
+        if (payment.Status == "Paid")
+            return Ok(ApiResponse<KhqrPaymentDto>.Ok(ToDto(payment), "Payment already confirmed."));
+        if (payment.Status == "Expired")
+            return BadRequest(ApiResponse<string>.Fail("Payment expired. Generate a new KHQR code."));
+        if (string.IsNullOrWhiteSpace(payment.Md5Hash))
+            return BadRequest(ApiResponse<string>.Fail("Payment has no MD5 hash to verify."));
+
+        var isPaid = await khqrVerifier.IsPaidAsync(payment.Md5Hash, HttpContext.RequestAborted);
+        if (!isPaid)
+            return Ok(ApiResponse<KhqrPaymentDto>.Ok(ToDto(payment), "Payment is still pending."));
+
+        await MarkPaidAsync(payment, "Bakong MD5 verified");
+        return Ok(ApiResponse<KhqrPaymentDto>.Ok(ToDto(payment), "Payment verified and confirmed."));
+    }
+
+    [HttpPatch("{id}/confirm"), Authorize(Roles = "Admin,Staff")]
+    public async Task<IActionResult> Confirm(int id, [FromBody] ConfirmPaymentRequest req)
+    {
+        var payment = await db.Payments.AsTracking().FirstOrDefaultAsync(p => p.PaymentId == id);
+        if (payment == null) return NotFound(ApiResponse<string>.Fail("Payment not found."));
+
+        if (payment.Status != "Paid")
+        {
+            await MarkPaidAsync(payment, req.ProviderReference);
+        }
+
+        return Ok(ApiResponse<KhqrPaymentDto>.Ok(ToDto(payment), "Payment confirmed."));
+    }
+
+    private async Task<bool> CanAccessClientAsync(int? clientId)
+    {
+        var role = User.FindFirst(ClaimTypes.Role)?.Value ?? "";
+        if (role is "Admin" or "Staff") return true;
+        if (role != "Client" || clientId == null) return false;
+
+        var currentClientId = await GetCurrentClientIdAsync();
+        return currentClientId == clientId.Value;
+    }
+
+    private async Task<int?> GetCurrentClientIdAsync()
+    {
+        var userIdClaim = User.FindFirst("user_id")?.Value;
+        if (!int.TryParse(userIdClaim, out var userId)) return null;
+        return await db.ClientDetails
+            .Where(c => c.UserId == userId)
+            .Select(c => (int?)c.ClientId)
+            .FirstOrDefaultAsync();
+    }
+
+    private Payment CreateKhqrPayment(int clientId, string purpose, decimal price, string? requestedCurrency, string metadataJson)
+    {
+        var now = DateTime.UtcNow;
+        var opts = khqrOptions.Value;
+        var reference = $"GYM-{now:yyyyMMddHHmmss}-{Random.Shared.Next(1000, 9999)}";
+        var currency = string.IsNullOrWhiteSpace(requestedCurrency) ? opts.DefaultCurrency : requestedCurrency;
+        currency = currency.Equals("KHR", StringComparison.OrdinalIgnoreCase) ? "KHR" : "USD";
+        var amount = decimal.Round(price, currency == "KHR" ? 0 : 2);
+        var payload = khqr.CreatePayload(amount, currency, reference);
+
+        return new Payment
+        {
+            ClientId = clientId,
+            Purpose = purpose,
+            Amount = amount,
+            Currency = currency,
+            Status = "Pending",
+            Provider = "BakongKHQR",
+            Reference = reference,
+            Md5Hash = CreateMd5(payload),
+            BakongAccountId = opts.BakongAccountId,
+            MerchantName = opts.MerchantName,
+            MerchantCity = opts.MerchantCity,
+            QrPayload = payload,
+            QrImageDataUri = qrCode.CreatePngDataUri(payload),
+            MetadataJson = metadataJson,
+            CreatedAt = now,
+            ExpiresAt = now.AddMinutes(Math.Max(1, opts.PaymentExpiresMinutes))
+        };
+    }
+
+    private async Task MarkPaidAsync(Payment payment, string? providerReference)
+    {
+        payment.Status = "Paid";
+        payment.PaidAt = DateTime.UtcNow;
+        payment.ProviderReference = providerReference;
+
+        if (payment.Purpose == "Membership" && payment.MembershipId == null && payment.ClientId.HasValue)
+        {
+            var metadata = JsonSerializer.Deserialize<MembershipPaymentMetadata>(payment.MetadataJson ?? "{}");
+            if (metadata != null)
+            {
+                var membership = new ClientMembership
+                {
+                    ClientId = payment.ClientId.Value,
+                    Type = metadata.Type,
+                    Price = payment.Amount,
+                    StartAt = metadata.StartAt,
+                    ExpireAt = metadata.ExpireAt,
+                    IsActive = true
+                };
+                db.ClientMemberships.Add(membership);
+                await db.SaveChangesAsync();
+                payment.MembershipId = membership.MembershipId;
+            }
+        }
+        else if (payment.Purpose == "Course" && payment.EnrollmentId == null && payment.ClientId.HasValue)
+        {
+            var metadata = JsonSerializer.Deserialize<CoursePaymentMetadata>(payment.MetadataJson ?? "{}");
+            if (metadata != null)
+            {
+                var existing = await db.CourseRooms.FirstOrDefaultAsync(e =>
+                    e.CourseId == metadata.CourseId && e.ClientId == payment.ClientId.Value);
+                if (existing != null)
+                {
+                    payment.EnrollmentId = existing.EnrollmentId;
+                }
+                else
+                {
+                    var enrollment = new CourseRoom
+                    {
+                        CourseId = metadata.CourseId,
+                        ClientId = payment.ClientId.Value,
+                        StartAt = metadata.StartAt,
+                        ExpireAt = metadata.ExpireAt,
+                        Amount = payment.Amount,
+                        IsApproved = true,
+                        ApprovedAt = DateTime.UtcNow
+                    };
+                    db.CourseRooms.Add(enrollment);
+                    await db.SaveChangesAsync();
+                    payment.EnrollmentId = enrollment.EnrollmentId;
+                }
+            }
+        }
+
+        await db.SaveChangesAsync();
+    }
+
+    private Task ExpirePendingPaymentsAsync(int? paymentId = null)
+    {
+        var now = DateTime.UtcNow;
+        var q = db.Payments.Where(p => p.Status == "Pending" && p.ExpiresAt <= now);
+        if (paymentId.HasValue) q = q.Where(p => p.PaymentId == paymentId.Value);
+        return q.ExecuteUpdateAsync(s => s.SetProperty(p => p.Status, "Expired"));
+    }
+
+    private static string CreateMd5(string value)
+    {
+        var hash = MD5.HashData(Encoding.UTF8.GetBytes(value));
+        return Convert.ToHexString(hash).ToLowerInvariant();
+    }
+
+    private static KhqrPaymentDto ToDto(Payment p) =>
+        new(p.PaymentId, p.ClientId, p.Purpose, p.Amount, p.Currency, p.Status, p.Provider,
+            p.Reference, p.ProviderReference, p.Md5Hash, p.QrPayload, p.QrImageDataUri, p.CreatedAt,
+            p.ExpiresAt, p.PaidAt, p.MembershipId, p.EnrollmentId, GetOrderName(p));
+
+    private static string? GetOrderName(Payment p)
+    {
+        try
+        {
+            if (p.Purpose == "Membership")
+                return JsonSerializer.Deserialize<MembershipPaymentMetadata>(p.MetadataJson ?? "{}")?.Type;
+            if (p.Purpose == "Course")
+                return JsonSerializer.Deserialize<CoursePaymentMetadata>(p.MetadataJson ?? "{}")?.CourseName;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+
+        return null;
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // PUBLIC CONTROLLER — No auth required
 // Used by home.html (public landing page) and portal.html
 // ═══════════════════════════════════════════════════════════════
 [ApiController, Route("api/public")]
-public class PublicController(GymDbContext db) : ControllerBase
+public class PublicController(GymDbContext db, IAuthService auth) : ControllerBase
 {
     // GET /api/public/trainers — active trainers with skills
     [HttpGet("trainers"), AllowAnonymous]
@@ -787,6 +1093,7 @@ public class PublicController(GymDbContext db) : ControllerBase
         db.ClientDetails.Add(client);
         await db.SaveChangesAsync();
 
-        return Ok(ApiResponse<object>.Ok(new { client.ClientId, user.UserId }, "Account created."));
+        var otp = await auth.StartRegistrationOtpAsync(user);
+        return Ok(ApiResponse<OtpStartResponse>.Ok(otp, "Account created. Verification code sent."));
     }
 }

@@ -288,6 +288,11 @@
             color: var(--pur)
         }
 
+        .b-amb {
+            background: var(--amb-bg);
+            color: var(--amb)
+        }
+
         .b-muted {
             background: var(--s3);
             color: var(--txt3)
@@ -535,12 +540,101 @@
             padding: 8px 10px;
             font-size: 12.5px;
             color: var(--txt);
-            outline: none
+            outline: none;
+            transition: background-color .15s,border-color .15s,box-shadow .15s
         }
 
-            .form-input:focus {
-                border-color: var(--acc)
+            .form-input[readonly], .form-input:disabled {
+                opacity: .78;
+                cursor: not-allowed;
+                background-color: var(--s3)
             }
+
+            .form-input:focus {
+                border-color: var(--acc);
+                box-shadow: 0 0 0 3px var(--glow)
+            }
+
+        select.form-input {
+            appearance: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+            min-height: 38px;
+            padding-right: 38px;
+            border-radius: 10px;
+            background-color: var(--s2);
+            background-image: url("data:image/svg+xml,%3Csvg width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%238892aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 16px 16px;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.035)
+        }
+
+            select.form-input:hover:not(:disabled) {
+                background-color: var(--s3);
+                border-color: rgba(255,255,255,.2)
+            }
+
+            select.form-input:disabled {
+                color: var(--txt3);
+                cursor: not-allowed
+            }
+
+        .ui-icon {
+            width: 1em;
+            height: 1em;
+            display: block;
+            flex-shrink: 0
+        }
+
+        .payment-status {
+            display: none;
+            align-items: flex-start;
+            gap: 10px;
+            margin-top: 10px;
+            border: 1px solid var(--brd2);
+            border-radius: 12px;
+            background: var(--s2);
+            padding: 11px 12px;
+            color: var(--txt2);
+            font-size: 12px
+        }
+
+            .payment-status.ok {
+                border-color: rgba(29,185,122,.25);
+                background: var(--grn-bg)
+            }
+
+            .payment-status.warn {
+                border-color: rgba(245,166,35,.28);
+                background: var(--amb-bg)
+            }
+
+        .payment-status-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--s3);
+            color: var(--acc);
+            flex: 0 0 auto
+        }
+
+        .payment-status-label {
+            font-size: 10px;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            color: var(--txt3);
+            font-weight: 800;
+            margin-bottom: 2px
+        }
+
+        .payment-status-text {
+            color: var(--txt);
+            line-height: 1.45
+        }
 
         .form-grid {
             display: grid;
@@ -690,6 +784,7 @@
             <button class="tab active" onclick="showTab('overview',this)">Overview</button>
             <button class="tab" onclick="showTab('memberships',this)">Memberships</button>
             <button class="tab" onclick="showTab('courses',this)">Courses</button>
+            <button class="tab" onclick="showTab('orders',this)">Orders</button>
             <button class="tab" onclick="showTab('checkins',this)">Check-ins</button>
             <button class="tab" onclick="showTab('profile',this)">Profile</button>
         </div>
@@ -710,7 +805,13 @@
         </div>
         <div id="tab-courses" style="display:none">
             <div class="card" style="margin-bottom:16px"><div class="card-title">My Enrollments</div><div class="card-sub">Courses you are enrolled in</div><div id="my-enrollments"><div style="color:var(--txt3);font-size:13px;padding:14px 0">Loading…</div></div></div>
-            <div class="card"><div class="card-title">Browse All Courses</div><div class="card-sub">Tap to enroll</div><div class="g-auto" id="all-courses" style="margin-top:12px"><div style="color:var(--txt3);font-size:12.5px">Loading…</div></div></div>
+            <div class="card"><div class="card-title">Browse All Courses</div><div class="card-sub">Generate KHQR to join a course</div><div class="g-auto" id="all-courses" style="margin-top:12px"><div style="color:var(--txt3);font-size:12.5px">Loading…</div></div></div>
+        </div>
+        <div id="tab-orders" style="display:none">
+            <div class="card">
+                <div class="card-title">My Orders</div><div class="card-sub">Membership and course KHQR orders</div>
+                <table><thead><tr><th>Order</th><th>Type</th><th>Amount</th><th>Status</th><th>Date</th></tr></thead><tbody id="orders-tbody"><tr><td colspan="5" style="text-align:center;padding:28px;color:var(--txt3)">Loading…</td></tr></tbody></table>
+            </div>
         </div>
         <div id="tab-checkins" style="display:none">
             <div class="card">
@@ -733,24 +834,50 @@
     <div class="modal-overlay" id="buy-modal" onclick="if(event.target===this)closeBuyModal()">
         <div class="modal-box">
             <div class="modal-title" id="buy-modal-title">Buy Membership</div>
-            <div class="modal-sub">Confirm your plan details</div>
+            <div class="modal-sub" id="buy-modal-sub">Fixed price and duration. Generate KHQR to pay.</div>
             <div class="err-box" id="buy-err"></div>
-            <div class="form-group"><label class="form-lbl">Plan Type</label><input class="form-input" id="buy-type" readonly></div>
+            <div class="form-group"><label class="form-lbl" id="buy-type-label">Order Item</label><input class="form-input" id="buy-type" readonly></div>
             <div class="form-grid">
-                <div class="form-group"><label class="form-lbl">Price (USD)</label><input class="form-input" id="buy-price" type="number" step="0.01" min="0"></div>
-                <div class="form-group"><label class="form-lbl">Duration</label><select class="form-input" id="buy-duration" onchange="recalcBuyDates()"><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12" selected>1 Year</option></select></div>
+                <div class="form-group"><label class="form-lbl">Price (USD)</label><input class="form-input" id="buy-price" type="number" step="0.01" min="0" readonly></div>
+                <div class="form-group"><label class="form-lbl">Duration</label><select class="form-input" id="buy-duration" disabled><option value="1">1 Month</option><option value="3">3 Months</option><option value="6">6 Months</option><option value="12" selected>1 Year</option></select></div>
             </div>
             <div class="form-grid">
-                <div class="form-group"><label class="form-lbl">Start Date</label><input class="form-input" id="buy-start" type="date"></div>
-                <div class="form-group"><label class="form-lbl">Expire Date</label><input class="form-input" id="buy-expire" type="date"></div>
+                <div class="form-group"><label class="form-lbl">Start Date</label><input class="form-input" id="buy-start" type="date" readonly></div>
+                <div class="form-group"><label class="form-lbl">Expire Date</label><input class="form-input" id="buy-expire" type="date" readonly></div>
+            </div>
+            <div id="khqr-box" style="display:none;margin-top:12px;border:1px solid var(--brd);border-radius:12px;overflow:hidden;background:var(--s2)">
+                <div style="height:44px;background:#e1232e;display:flex;align-items:center;padding:0 14px">
+                    <img src="assets/bakong/khqr-logo.svg" alt="KHQR" style="height:24px;width:auto">
+                </div>
+                <div style="display:flex;gap:14px;align-items:center;padding:14px">
+                    <img id="khqr-img" alt="Bakong KHQR" style="width:132px;height:132px;border-radius:8px;background:white;padding:6px">
+                    <div style="min-width:0;flex:1">
+                        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);font-weight:700">Bakong KHQR · 10 min</div>
+                        <div id="khqr-ref" style="font-size:13px;color:var(--txt);font-weight:700;margin-top:4px">—</div>
+                        <div id="khqr-md5" style="font-size:10.5px;color:var(--txt3);margin-top:3px;word-break:break-all">MD5: —</div>
+                        <div id="khqr-exp" style="font-size:11.5px;color:var(--txt3);margin-top:4px">—</div>
+                        <textarea id="khqr-payload" readonly style="margin-top:8px;width:100%;height:52px;background:var(--s3);color:var(--txt2);border:1px solid var(--brd);border-radius:8px;padding:8px;font-size:10.5px;resize:none"></textarea>
+                    </div>
+                </div>
+                <div style="font-size:11.5px;color:var(--txt3);padding:0 14px 14px">Scan with Bakong or a KHQR-supported banking app, then verify by MD5 before the 10-minute expiry.</div>
+            </div>
+            <div id="khqr-status" class="payment-status">
+                <div class="payment-status-icon" id="khqr-status-icon"></div>
+                <div>
+                    <div class="payment-status-label">Payment Status</div>
+                    <div class="payment-status-text" id="khqr-status-text">No KHQR order generated yet.</div>
+                </div>
             </div>
             <div class="modal-foot">
                 <button class="btn-ghost" onclick="closeBuyModal()">Cancel</button>
-                <button class="btn-primary" id="buy-submit" onclick="confirmBuyPlan()">Confirm &amp; Pay</button>
+                <button class="btn-ghost" id="buy-orders" style="display:none" onclick="openOrdersTab()">View Orders</button>
+                <button class="btn-ghost" id="buy-verify" style="display:none" onclick="verifyKhqrPayment()">Verify Payment</button>
+                <button class="btn-primary" id="buy-submit" onclick="confirmBuyPlan()">Generate KHQR</button>
             </div>
         </div>
     </div>
     <div id="toast-wrap"></div>
+    <script src="js/icons.js"></script>
     <script>
 const token=localStorage.getItem('gympro-token'),role=localStorage.getItem('gympro-role')||'',myName=localStorage.getItem('gympro-user')||'Member',myId=parseInt(localStorage.getItem('gympro-userid')||'0');
 // Defer redirect so page has time to render (avoids white flash)
@@ -765,9 +892,11 @@ const API=async(path,opts={})=>{const res=await fetch('/api'+path,{headers:{'Con
 const fmtDate=d=>{if(!d)return'—';try{return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}catch{return d;}};
 const fmtTime=d=>{if(!d)return'—';try{return new Date(d).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}catch{return d;}};
 const fmtMoney=v=>'$'+Number(v||0).toFixed(2);
-function toast(msg,type='info',ms=3200){const w=document.getElementById('toast-wrap');const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`<div class="toast-icon">${{ok:'✓',err:'✕',info:'i'}[type]||'i'}</div><span>${msg}</span>`;w.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(14px)';setTimeout(()=>el.remove(),250);},ms);}
+let activeKhqrPaymentId=null, activePurchaseKind='Membership', activePurchaseContext=null, autoVerifyTimer=null, autoVerifyAttempts=0;
+function toast(msg,type='info',ms=3200){const w=document.getElementById('toast-wrap');const el=document.createElement('div');const icons={ok:'check',err:'x',info:'info',warn:'warning'};el.className=`toast ${type}`;el.innerHTML=`<div class="toast-icon">${GymIcons.svg(icons[type]||'info')}</div><span>${msg}</span>`;w.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(14px)';setTimeout(()=>el.remove(),250);},ms);}
 function logout(){['gympro-token','gympro-role','gympro-user','gympro-userid','gympro-roleid'].forEach(k=>localStorage.removeItem(k));location.href='home.html';}
-function showTab(id,btn){document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).style.display='block';if(btn)btn.classList.add('active');({overview:loadOverview,memberships:loadMemberships,courses:loadCourses,checkins:loadCheckins,profile:loadProfile})[id]?.();}
+function showTab(id,btn){document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).style.display='block';if(btn)btn.classList.add('active');({overview:loadOverview,memberships:loadMemberships,courses:loadCourses,orders:loadOrders,checkins:loadCheckins,profile:loadProfile})[id]?.();}
+function openOrdersTab(){closeBuyModal();showTab('orders',document.querySelectorAll('.tab')[3]);}
 let _cid=null;
 async function getClientId(){
   if(_cid) return _cid;
@@ -783,25 +912,35 @@ async function getClientId(){
 async function loadOverview(){
   const cid=await getClientId();
   try{if(cid){const membs=await API(`/members/${cid}/memberships`);const active=(membs||[]).filter(m=>m.isActive);document.getElementById('ov-memb').textContent=active.length;if(active.length){const m=active[0];document.getElementById('ov-memb-detail').innerHTML=`<div class="memb-card"><div><div class="mc-label">GymPro Membership</div><div class="mc-type">${m.type||'—'}</div><div class="mc-dates">${fmtDate(m.startAt)} → ${fmtDate(m.expireAt)}</div><div style="margin-top:8px"><span class="badge b-grn">Active</span></div></div><div style="text-align:right"><div style="font-size:10px;color:var(--txt3);margin-bottom:2px">Paid</div><div class="mc-price">${fmtMoney(m.price)}</div><div class="mc-bar"></div></div></div>`;}else{document.getElementById('ov-memb-detail').innerHTML=`<div style="color:var(--txt3);font-size:13px;padding:10px 0">No active membership. <a href="#" onclick="showTab('memberships',document.querySelectorAll('.tab')[1]);return false" style="color:var(--acc)">Browse plans →</a></div>`;}}}catch(e){}
-  try{if(cid){const ci=await API(`/members/${cid}/checkins`);const arr=ci||[];const now=new Date();const tm=arr.filter(c=>{const d=new Date(c.checkinDate||0);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});document.getElementById('ov-ci').textContent=tm.length;if(arr.length){document.getElementById('ov-ci-list').innerHTML=arr.slice(0,5).map(c=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--brd);font-size:12.5px"><span style="color:var(--txt)">${fmtDate(c.checkinDate)}</span><span style="color:var(--txt3)">${fmtTime(c.checkinDate)}</span><span class="badge b-grn">✓</span></div>`).join('');}}}catch(e){}
+  try{if(cid){const ci=await API(`/members/${cid}/checkins`);const arr=ci||[];const now=new Date();const tm=arr.filter(c=>{const d=new Date(c.checkinDate||0);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();});document.getElementById('ov-ci').textContent=tm.length;if(arr.length){document.getElementById('ov-ci-list').innerHTML=arr.slice(0,5).map(c=>`<div style="display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--brd);font-size:12.5px"><span style="color:var(--txt)">${fmtDate(c.checkinDate)}</span><span style="color:var(--txt3)">${fmtTime(c.checkinDate)}</span><span class="badge b-grn">${GymIcons.svg('check')}</span></div>`).join('');}}}catch(e){}
   try{if(cid){const enr=await API(`/enrollments?clientId=${cid}`);document.getElementById('ov-courses').textContent=(enr||[]).length;}}catch(e){document.getElementById('ov-courses').textContent='—';}
 }
 async function loadMemberships(){
   const cid=await getClientId();
-  if(cid){try{const list=await API(`/members/${cid}/memberships`)||[];document.getElementById('my-memberships').innerHTML=list.length?list.map(m=>`<div class="memb-card"><div><div class="mc-label">GymPro Membership</div><div class="mc-type">${m.type||'—'}</div><div class="mc-dates">${fmtDate(m.startAt)} → ${fmtDate(m.expireAt)}</div><div style="margin-top:6px"><span class="badge ${m.isActive?'b-grn':'b-muted'}">${m.isActive?'Active':'Expired'}</span></div></div><div style="text-align:right"><div style="font-size:10px;color:var(--txt3);margin-bottom:2px">Amount</div><div class="mc-price">${fmtMoney(m.price)}</div><div class="mc-bar"></div></div></div>`).join(''):'<div style="color:var(--txt3);font-size:13px;padding:14px 0">No memberships yet. Buy a plan below.</div>';}catch(e){document.getElementById('my-memberships').innerHTML=`<div style="color:var(--red);font-size:12.5px;padding:10px 0">⚠ ${e.message}</div>`;}}
+  if(cid){try{const list=await API(`/members/${cid}/memberships`)||[];document.getElementById('my-memberships').innerHTML=list.length?list.map(m=>`<div class="memb-card"><div><div class="mc-label">GymPro Membership</div><div class="mc-type">${m.type||'—'}</div><div class="mc-dates">${fmtDate(m.startAt)} → ${fmtDate(m.expireAt)}</div><div style="margin-top:6px"><span class="badge ${m.isActive?'b-grn':'b-muted'}">${m.isActive?'Active':'Expired'}</span></div></div><div style="text-align:right"><div style="font-size:10px;color:var(--txt3);margin-bottom:2px">Amount</div><div class="mc-price">${fmtMoney(m.price)}</div><div class="mc-bar"></div></div></div>`).join(''):'<div style="color:var(--txt3);font-size:13px;padding:14px 0">No memberships yet. Buy a plan below.</div>';}catch(e){document.getElementById('my-memberships').innerHTML=`<div style="display:flex;align-items:center;gap:8px;color:var(--red);font-size:12.5px;padding:10px 0">${GymIcons.svg('warning')}<span>${e.message}</span></div>`;}}
   await loadPortalPlans();
-  const hash=location.hash.replace('#','');if(hash.startsWith('buy-')){const t=hash.replace('buy-','');const p={Monthly:29.99,Quarterly:79.99,Annual:249};if(p[t])openBuyModal(t,p[t]);location.hash='';}
+  const hash=location.hash.replace('#','');if(hash.startsWith('buy-')){const t=hash.replace('buy-','');const card=[...document.querySelectorAll('[data-plan-json]')].map(x=>JSON.parse(x.dataset.planJson)).find(p=>p.type===t);if(card)openBuyModal(card);location.hash='';}
 }
-async function loadPortalPlans(){try{const json=await(await fetch('/api/public/plans')).json();const plans=json.data||json||[];const FEAT=['Quarterly','Annual'];document.getElementById('portal-plans').innerHTML=plans.map(p=>{const type=p.type||'Plan';const price=Number(p.price||0);const feat=FEAT.includes(type);return`<div class="plan-card${feat?' featured':''}"><div class="plan-badge" style="display:${feat?'block':'none'}">POPULAR</div><div class="plan-type">${type}</div><div class="plan-price">$${Math.floor(price)}<span style="font-size:13px">.${String(price.toFixed(2)).split('.')[1]}</span></div><div class="plan-per">per period</div><button class="${feat?'plan-btn plan-btn-solid':'plan-btn plan-btn-ghost'}" onclick="openBuyModal('${type}',${price})">Buy ${type}</button></div>`;}).join('')||'<div style="color:var(--txt3)">No plans available.</div>';}catch(e){document.getElementById('portal-plans').innerHTML=`<div class="plan-card"><div class="plan-type">Monthly</div><div class="plan-price">$29</div><button class="plan-btn plan-btn-ghost" onclick="openBuyModal('Monthly',29.99)">Buy Monthly</button></div><div class="plan-card featured"><div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--acc);color:white;font-size:9.5px;font-weight:700;padding:3px 10px;border-radius:20px">POPULAR</div><div class="plan-type">Quarterly</div><div class="plan-price">$79</div><button class="plan-btn plan-btn-solid" onclick="openBuyModal('Quarterly',79.99)">Buy Quarterly</button></div><div class="plan-card"><div class="plan-type">Annual</div><div class="plan-price">$249</div><button class="plan-btn plan-btn-ghost" onclick="openBuyModal('Annual',249)">Buy Annual</button></div>`;}}
+async function loadPortalPlans(){try{const json=await(await fetch('/api/public/plans')).json();const plans=json.data||json||[];const FEAT=['Quarterly','Annual'];document.getElementById('portal-plans').innerHTML=plans.map(p=>{const type=p.type||'Plan';const price=Number(p.price||0);const months=Number(p.durationMonths||1);const feat=FEAT.includes(type);const data=JSON.stringify({planId:p.planId,type,price,durationMonths:months}).replace(/"/g,'&quot;');return`<div class="plan-card${feat?' featured':''}" data-plan-json="${data}"><div class="plan-badge" style="display:${feat?'block':'none'}">POPULAR</div><div class="plan-type">${type}</div><div class="plan-price">$${Math.floor(price)}<span style="font-size:13px">.${String(price.toFixed(2)).split('.')[1]}</span></div><div class="plan-per">${months} month${months===1?'':'s'}</div><button class="${feat?'plan-btn plan-btn-solid':'plan-btn plan-btn-ghost'}" onclick="openBuyModal(JSON.parse(this.closest('[data-plan-json]').dataset.planJson))">Buy ${type}</button></div>`;}).join('')||'<div style="color:var(--txt3)">No plans available.</div>';}catch(e){document.getElementById('portal-plans').innerHTML='<div style="color:var(--red);font-size:12.5px">Could not load plans.</div>';}}
 const PLAN_MO={Monthly:1,Quarterly:3,Annual:12};
-function openBuyModal(type,price){document.getElementById('buy-type').value=type;document.getElementById('buy-price').value=price.toFixed(2);const d=document.getElementById('buy-duration'),mo=PLAN_MO[type]||1;if(d)for(let i=0;i<d.options.length;i++)if(parseInt(d.options[i].value)===mo){d.selectedIndex=i;break;}recalcBuyDates();document.getElementById('buy-err').style.display='none';document.getElementById('buy-modal-title').textContent=`Buy ${type} Plan`;document.getElementById('buy-modal').classList.add('open');}
-function closeBuyModal(){document.getElementById('buy-modal').classList.remove('open');}
-function recalcBuyDates(){const t=new Date();t.setHours(0,0,0,0);const mo=parseInt(document.getElementById('buy-duration')?.value||'1');const e=new Date(t);e.setMonth(e.getMonth()+mo);document.getElementById('buy-start').value=t.toISOString().split('T')[0];document.getElementById('buy-expire').value=e.toISOString().split('T')[0];}
-async function confirmBuyPlan(){const cid=await getClientId();const errEl=document.getElementById('buy-err');errEl.style.display='none';if(!cid){errEl.textContent='Could not find your member account. Contact staff.';errEl.style.display='block';return;}const body={clientId:cid,type:document.getElementById('buy-type').value,price:parseFloat(document.getElementById('buy-price').value)||0,startAt:new Date(document.getElementById('buy-start').value).toISOString(),expireAt:new Date(document.getElementById('buy-expire').value).toISOString()};const btn=document.getElementById('buy-submit');btn.disabled=true;btn.textContent='Processing…';try{await API('/memberships',{method:'POST',body:JSON.stringify(body)});toast('Membership purchased! ✓','ok');closeBuyModal();loadMemberships();loadOverview();}catch(e){errEl.textContent=e.message;errEl.style.display='block';}finally{btn.disabled=false;btn.textContent='Confirm & Pay';}}
-async function loadCourses(){const cid=await getClientId();const CC=[['rgba(232,98,26,.15)','#e8621a'],['rgba(64,136,244,.15)','#4088f4'],['rgba(157,107,245,.15)','#9d6bf5'],['rgba(29,185,122,.15)','#1db97a']];try{if(cid){const enr=await API(`/enrollments?clientId=${cid}`)||[];document.getElementById('my-enrollments').innerHTML=enr.length?`<table><thead><tr><th>Course</th><th>Start</th><th>Expires</th><th>Paid</th></tr></thead><tbody>${enr.map(e=>`<tr><td style="color:var(--txt);font-weight:500">${e.courseName||'—'}</td><td>${fmtDate(e.startAt)}</td><td>${fmtDate(e.expireAt)}</td><td>${fmtMoney(e.amount)}</td></tr>`).join('')}</tbody></table>`:'<div style="color:var(--txt3);font-size:13px;padding:14px 0">Not enrolled in any courses yet. Browse below.</div>';}}catch(e){document.getElementById('my-enrollments').innerHTML=`<div style="color:var(--red);font-size:12.5px;padding:10px 0">⚠ ${e.message}</div>`;}
-try{const json=await(await fetch('/api/public/courses')).json();const courses=json.data||json||[];document.getElementById('all-courses').innerHTML=courses.length?courses.map((c,i)=>{const[bg,fg]=CC[i%CC.length];const pct=Math.min(100,Math.round((c.enrollmentCount||0)/20*100));return`<div class="course-card" onclick="enrollCourse(${c.courseId},'${(c.courseName||'').replace(/'/g,"\'")}',${c.price})"><div class="cc-icon" style="background:${bg};color:${fg}"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></div><div class="cc-name">${c.courseName}</div><div class="cc-meta">${c.trainerName||'—'} · ${c.skillName||'—'}</div><div style="display:flex;align-items:center;justify-content:space-between"><div class="cc-price">${fmtMoney(c.price)}</div><span class="badge b-pur" style="font-size:10px">${c.enrollmentCount||0}/20</span></div><div class="prog"><div class="prog-fill" style="width:${pct}%;background:${fg}"></div></div></div>`;}).join(''):'<div style="color:var(--txt3);font-size:13px">No courses available.</div>';}catch(e){document.getElementById('all-courses').innerHTML=`<div style="color:var(--red);font-size:12.5px">⚠ ${e.message}</div>`;}}
-async function enrollCourse(cid2,name,price){const cid=await getClientId();if(!cid){toast('Member account not found','err');return;}if(!confirm(`Enroll in "${name}" for ${fmtMoney(price)}?`))return;const t=new Date();t.setHours(0,0,0,0);const e=new Date(t);e.setMonth(e.getMonth()+3);try{await API('/enrollments',{method:'POST',body:JSON.stringify({courseId:cid2,clientId:cid,amount:price,startAt:t.toISOString(),expireAt:e.toISOString()})});toast(`Enrolled in ${name} ✓`,'ok');loadCourses();loadOverview();}catch(e){toast(e.message,'err');}}
-async function loadCheckins(){const cid=await getClientId();if(!cid){document.getElementById('ci-tbody').innerHTML='<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">Member record not found.</td></tr>';return;}try{const list=await API(`/members/${cid}/checkins?days=30`)||[];document.getElementById('ci-tbody').innerHTML=list.length?list.map(c=>`<tr><td style="color:var(--txt)">${fmtDate(c.checkinDate)}</td><td style="color:var(--txt2)">${fmtTime(c.checkinDate)}</td><td>${fmtMoney(c.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">No check-ins in the last 30 days.</td></tr>';}catch(e){document.getElementById('ci-tbody').innerHTML=`<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--red)">⚠ ${e.message}</td></tr>`;}}
+function setDurationOptions(months){const d=document.getElementById('buy-duration');if(!d)return;if(![...d.options].some(o=>parseInt(o.value)===months)){const opt=document.createElement('option');opt.value=String(months);opt.textContent=`${months} Months`;d.appendChild(opt);}d.value=String(months);}
+function setBuyDates(months){const t=new Date();t.setHours(0,0,0,0);const e=new Date(t);e.setMonth(e.getMonth()+months);document.getElementById('buy-start').value=t.toISOString().split('T')[0];document.getElementById('buy-expire').value=e.toISOString().split('T')[0];}
+function openBuyModal(plan){stopAutoVerify();activePurchaseKind='Membership';activePurchaseContext=plan;activeKhqrPaymentId=null;const months=Number(plan.durationMonths||PLAN_MO[plan.type]||1);document.getElementById('buy-type-label').textContent='Membership Plan';document.getElementById('buy-type').value=plan.type;document.getElementById('buy-price').value=Number(plan.price||0).toFixed(2);setDurationOptions(months);setBuyDates(months);resetBuyModalState();document.getElementById('buy-modal-title').textContent=`Buy ${plan.type} Plan`;document.getElementById('buy-modal-sub').textContent='Fixed price and duration. Generate KHQR to pay.';document.getElementById('buy-modal').classList.add('open');}
+function openCourseOrder(course){stopAutoVerify();activePurchaseKind='Course';activePurchaseContext=course;activeKhqrPaymentId=null;document.getElementById('buy-type-label').textContent='Course';document.getElementById('buy-type').value=course.name;document.getElementById('buy-price').value=Number(course.price||0).toFixed(2);setDurationOptions(3);setBuyDates(3);resetBuyModalState();document.getElementById('buy-modal-title').textContent=`Buy ${course.name}`;document.getElementById('buy-modal-sub').textContent='Generate KHQR to pay. Course enrollment activates after payment is verified.';document.getElementById('buy-modal').classList.add('open');}
+function resetBuyModalState(){document.getElementById('buy-err').style.display='none';document.getElementById('khqr-box').style.display='none';document.getElementById('khqr-status').style.display='none';document.getElementById('khqr-status').className='payment-status';document.getElementById('khqr-status-icon').innerHTML='';document.getElementById('khqr-status-text').textContent='No KHQR order generated yet.';document.getElementById('buy-verify').style.display='none';document.getElementById('buy-orders').style.display='none';document.getElementById('buy-submit').style.display='inline-flex';document.getElementById('buy-submit').textContent='Generate KHQR';document.getElementById('buy-submit').disabled=false;}
+function setPurchaseStatus(message,icon='info',tone=''){const box=document.getElementById('khqr-status');box.className=`payment-status ${tone}`.trim();document.getElementById('khqr-status-icon').innerHTML=GymIcons.svg(icon);document.getElementById('khqr-status-text').textContent=message;box.style.display='flex';}
+function closeBuyModal(){stopAutoVerify();document.getElementById('buy-modal').classList.remove('open');}
+function recalcBuyDates(){setBuyDates(parseInt(document.getElementById('buy-duration')?.value||'1'));}
+function showBuyError(message){const errEl=document.getElementById('buy-err');errEl.textContent=message;errEl.style.display='block';}
+async function confirmBuyPlan(){const cid=await getClientId();const errEl=document.getElementById('buy-err');errEl.style.display='none';if(!cid){showBuyError('Could not find your member account. Contact staff.');return;}const btn=document.getElementById('buy-submit');btn.disabled=true;btn.textContent='Generating...';try{let p;if(activePurchaseKind==='Course'){p=await API('/payments/khqr/course',{method:'POST',body:JSON.stringify({clientId:cid,courseId:activePurchaseContext.courseId,currency:'USD'})});}else{p=await API('/payments/khqr/membership',{method:'POST',body:JSON.stringify({clientId:cid,planId:activePurchaseContext.planId,type:activePurchaseContext.type,price:Number(activePurchaseContext.price||0),startAt:new Date(document.getElementById('buy-start').value).toISOString(),expireAt:new Date(document.getElementById('buy-expire').value).toISOString(),currency:'USD'})});}activeKhqrPaymentId=p.paymentId;renderKhqrOrder(p);document.getElementById('buy-submit').style.display='none';document.getElementById('buy-orders').style.display='inline-flex';document.getElementById('buy-verify').style.display='inline-flex';toast('KHQR order generated. Auto-checking MD5.', 'ok');loadOrders();startAutoVerify();}catch(e){showBuyError(e.message);}finally{btn.disabled=false;if(btn.style.display!=='none')btn.textContent='Generate KHQR';}}
+function renderKhqrOrder(p){document.getElementById('khqr-img').src=p.qrImageDataUri||'';document.getElementById('khqr-ref').textContent=`Reference: ${p.reference||'—'} · ${fmtMoney(p.amount)}`;document.getElementById('khqr-md5').textContent=`MD5: ${p.md5Hash||'—'}`;document.getElementById('khqr-exp').textContent=`Expires: ${fmtDate(p.expiresAt)} ${fmtTime(p.expiresAt)}`;document.getElementById('khqr-payload').value=p.qrPayload||'';document.getElementById('khqr-box').style.display='block';setPurchaseStatus('KHQR generated. Auto-checking MD5 payment status.','info');}
+function stopAutoVerify(){if(autoVerifyTimer){clearInterval(autoVerifyTimer);autoVerifyTimer=null;}autoVerifyAttempts=0;}
+function startAutoVerify(){stopAutoVerify();autoVerifyTimer=setInterval(()=>verifyKhqrPayment(true),5000);setTimeout(()=>verifyKhqrPayment(true),1200);}
+async function verifyKhqrPayment(isAuto=false){if(!activeKhqrPaymentId){if(!isAuto)showBuyError('Generate KHQR first.');return;}const btn=document.getElementById('buy-verify');if(!isAuto){btn.disabled=true;btn.textContent='Verifying...';}document.getElementById('buy-err').style.display='none';try{const p=await API(`/payments/${activeKhqrPaymentId}/verify`,{method:'PATCH'});loadOrders();if(p.status==='Paid'){stopAutoVerify();const msg=activePurchaseKind==='Course'?'Payment verified. Course enrollment activated.':'Payment verified. Membership activated.';setPurchaseStatus(msg,'check','ok');toast(msg,'ok');loadMemberships();loadCourses();loadOverview();setTimeout(()=>closeBuyModal(),900);}else if(p.status==='Expired'){stopAutoVerify();setPurchaseStatus('Order expired. Generate a new KHQR code.','warning','warn');}else{autoVerifyAttempts++;setPurchaseStatus(`Auto-checking MD5 payment status. Attempt ${autoVerifyAttempts}.`,'info');if(autoVerifyAttempts>=120)stopAutoVerify();if(!isAuto)toast('Payment is still pending','info');}}catch(e){if(isAuto){setPurchaseStatus('Auto-check paused. Use Verify Payment to retry.','warning','warn');stopAutoVerify();}else{showBuyError(e.message);}}finally{if(!isAuto){btn.disabled=false;btn.textContent='Verify Payment';}}}
+async function loadOrders(){try{const orders=await API('/payments/my')||[];const tbody=document.getElementById('orders-tbody');if(!orders.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--txt3)">No orders yet.</td></tr>';return;}const badge=s=>s==='Paid'?'b-grn':s==='Pending'?'b-amb':s==='Expired'?'b-red':'b-muted';tbody.innerHTML=orders.map(o=>`<tr><td><div style="color:var(--txt);font-weight:600">${o.orderName||o.reference||'Order'}</div><div style="font-size:10.5px;color:var(--txt3);word-break:break-all">${o.reference||''}</div></td><td>${o.purpose||'—'}</td><td>${fmtMoney(o.amount)}</td><td><span class="badge ${badge(o.status)}">${o.status||'—'}</span></td><td>${fmtDate(o.createdAt)}</td></tr>`).join('');}catch(e){document.getElementById('orders-tbody').innerHTML=`<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--red)">${e.message}</td></tr>`;}}
+async function loadCourses(){const cid=await getClientId();const CC=[['rgba(232,98,26,.15)','#e8621a'],['rgba(64,136,244,.15)','#4088f4'],['rgba(157,107,245,.15)','#9d6bf5'],['rgba(29,185,122,.15)','#1db97a']];try{if(cid){const enr=await API(`/enrollments?clientId=${cid}`)||[];document.getElementById('my-enrollments').innerHTML=enr.length?`<table><thead><tr><th>Course</th><th>Start</th><th>Expires</th><th>Paid</th></tr></thead><tbody>${enr.map(e=>`<tr><td style="color:var(--txt);font-weight:500">${e.courseName||'—'}</td><td>${fmtDate(e.startAt)}</td><td>${fmtDate(e.expireAt)}</td><td>${fmtMoney(e.amount)}</td></tr>`).join('')}</tbody></table>`:'<div style="color:var(--txt3);font-size:13px;padding:14px 0">Not enrolled in any courses yet. Browse below.</div>';}}catch(e){document.getElementById('my-enrollments').innerHTML=`<div style="display:flex;align-items:center;gap:8px;color:var(--red);font-size:12.5px;padding:10px 0">${GymIcons.svg('warning')}<span>${e.message}</span></div>`;}
+try{const json=await(await fetch('/api/public/courses')).json();const courses=json.data||json||[];document.getElementById('all-courses').innerHTML=courses.length?courses.map((c,i)=>{const[bg,fg]=CC[i%CC.length];const pct=Math.min(100,Math.round((c.enrollmentCount||0)/20*100));const data=JSON.stringify({courseId:c.courseId,name:c.courseName||'Course',price:Number(c.price||0)}).replace(/"/g,'&quot;');return`<div class="course-card" data-course-json="${data}" onclick="openCourseOrder(JSON.parse(this.dataset.courseJson))"><div class="cc-icon" style="background:${bg};color:${fg}">${GymIcons.svg('book')}</div><div class="cc-name">${c.courseName}</div><div class="cc-meta">${c.trainerName||'—'} · ${c.skillName||'—'}</div><div style="display:flex;align-items:center;justify-content:space-between"><div class="cc-price">${fmtMoney(c.price)}</div><span class="badge b-pur" style="font-size:10px">${c.enrollmentCount||0}/20</span></div><div class="prog"><div class="prog-fill" style="width:${pct}%;background:${fg}"></div></div></div>`;}).join(''):'<div style="color:var(--txt3);font-size:13px">No courses available.</div>';}catch(e){document.getElementById('all-courses').innerHTML=`<div style="display:flex;align-items:center;gap:8px;color:var(--red);font-size:12.5px">${GymIcons.svg('warning')}<span>${e.message}</span></div>`;}}
+async function loadCheckins(){const cid=await getClientId();if(!cid){document.getElementById('ci-tbody').innerHTML='<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">Member record not found.</td></tr>';return;}try{const list=await API(`/members/${cid}/checkins?days=30`)||[];document.getElementById('ci-tbody').innerHTML=list.length?list.map(c=>`<tr><td style="color:var(--txt)">${fmtDate(c.checkinDate)}</td><td style="color:var(--txt2)">${fmtTime(c.checkinDate)}</td><td>${fmtMoney(c.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">No check-ins in the last 30 days.</td></tr>';}catch(e){document.getElementById('ci-tbody').innerHTML=`<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--red)"><span style="display:inline-flex;align-items:center;gap:8px">${GymIcons.svg('warning')}<span>${e.message}</span></span></td></tr>`;}}
 async function loadProfile(){const cid=await getClientId();if(!cid)return;try{const m=await API(`/members/${cid}`);if(!m)return;document.getElementById('pf-name').value=m.fullName||'';document.getElementById('pf-email').value=m.email||'';document.getElementById('pf-phone').value=m.phone||'';document.getElementById('pf-dob').value=m.dob?m.dob.split('T')[0]:'';document.getElementById('pf-emergency').value=m.emergencyContact||'';}catch(e){toast('Could not load profile','err');}}
 loadOverview();
     </script>

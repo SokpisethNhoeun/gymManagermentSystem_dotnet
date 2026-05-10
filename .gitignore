@@ -51,6 +51,8 @@ TestResult.xml
 appsettings.local.json
 appsettings.*.local.json
 secrets.json
+.env
+.env.*
 **/Properties/launchSettings.json
 
 # ========================

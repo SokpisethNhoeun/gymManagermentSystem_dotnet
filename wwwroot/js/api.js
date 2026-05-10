@@ -49,6 +49,11 @@ const Api = (() => {
         if (d?.token) setToken(d.token);
         return d;
     }
+    async function verifyOtp(otpToken, code) {
+        const d = await post('/auth/verify-otp', { otpToken, code });
+        if (d?.token) setToken(d.token);
+        return d;
+    }
     function logout() { clearToken(); location.href = 'index.html'; }
 
     // ── Dashboard ────────────────────────────────────────────────────────────
@@ -117,6 +122,14 @@ const Api = (() => {
     const updateMembershipPlan = (id, b) => put(`/membership-plans/${id}`, b);
     const deleteMembershipPlan = (id) => del(`/membership-plans/${id}`);
 
+    // -- Payments / Bakong KHQR
+    const getPayments = () => get('/payments');
+    const getMyPayments = () => get('/payments/my');
+    const createKhqrMembershipPayment = (b) => post('/payments/khqr/membership', b);
+    const createKhqrCoursePayment = (b) => post('/payments/khqr/course', b);
+    const verifyPayment = (id) => patch(`/payments/${id}/verify`, {});
+    const confirmPayment = (id, b = {}) => patch(`/payments/${id}/confirm`, b);
+
     // -- Enrollment approval
     const getPendingEnrollments = () => get('/enrollments/pending');
     const approveEnrollment = (id, b) => patch(`/enrollments/${id}/approve`, b);
@@ -129,7 +142,7 @@ const Api = (() => {
     return {
         BASE_URL, getToken, setToken, clearToken, isAuth,
         get, post, put, patch, del,
-        login, logout, getStats,
+        login, verifyOtp, logout, getStats,
         getMembers, getMember, getMe, createMember, getMemberMemberships, getMemberCheckIns,
         getTrainers, createTrainer, toggleTrainer,
         getCourses, createCourse, deactivateCourse,
@@ -139,6 +152,7 @@ const Api = (() => {
         getStaff, createStaff, updateStaff,
         getSkills, createSkill,
         getMembershipPlans, createMembershipPlan, updateMembershipPlan, deleteMembershipPlan,
+        getPayments, getMyPayments, createKhqrMembershipPayment, createKhqrCoursePayment, verifyPayment, confirmPayment,
         getPendingEnrollments, approveEnrollment,
         getUsers, createUser, resetPassword,
     };

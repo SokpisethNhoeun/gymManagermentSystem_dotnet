@@ -17,7 +17,7 @@ try
     builder.Host.UseSerilog((ctx, lc) => lc.ReadFrom.Configuration(ctx.Configuration));
 
     // ── Port ─────────────────────────────────────────────────
-    builder.WebHost.UseUrls("http://localhost:5000", "http://0.0.0.0:5000");
+    builder.WebHost.UseUrls(builder.Configuration["ASPNETCORE_URLS"] ?? "http://0.0.0.0:5000");
 
     // ── Database ─────────────────────────────────────────────
     builder.Services.AddDbContext<GymDbContext>(opt =>
@@ -48,8 +48,12 @@ try
     builder.Services.AddAuthorization();
 
     // ── CORS ─────────────────────────────────────────────────
-    builder.Services.AddCors(opt => opt.AddPolicy("GymPolicy",
-        p => p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+    builder.Services.AddCors(opt => opt.AddPolicy("GymPolicy", p =>
+    {
+        var origins = builder.Configuration.GetSection("CorsOrigins").Get<string[]>() ?? [];
+        if (origins.Length > 0) p.WithOrigins(origins).AllowAnyHeader().AllowAnyMethod();
+        else p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod();
+    }));
 
     // ── Rate Limiting ────────────────────────────────────────
     builder.Services.AddMemoryCache();
@@ -61,7 +65,33 @@ try
     // ── Services ─────────────────────────────────────────────
     builder.Services.AddScoped<IJwtService, JwtService>();
     builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<IOtpService, OtpService>();
+    builder.Services.AddScoped<IEmailSender, GmailEmailSender>();
     builder.Services.AddScoped<IDashboardService, DashboardService>();
+    builder.Services.AddScoped<IKhqrService, KhqrService>();
+    builder.Services.AddScoped<IQrCodeService, QrCodeService>();
+    builder.Services.AddScoped<IKhqrTransactionVerifier, BakongTransactionVerifier>();
+    builder.Services.AddHttpClient("Bakong");
+    builder.Services.Configure<EmailOptions>(builder.Configuration.GetSection("Email"));
+    builder.Services.Configure<KhqrOptions>(builder.Configuration.GetSection("Khqr"));
+    builder.Services.PostConfigure<KhqrOptions>(opt =>
+    {
+        var bakongBaseUrl = builder.Configuration["BAKONG_BASE_URL"];
+        var bakongAccessToken = builder.Configuration["BAKONG_ACCESS_TOKEN"];
+        var bakongMerchantAccountId = builder.Configuration["BAKONG_MERCHANT_ACCOUNT_ID"];
+        var bakongMerchantName = builder.Configuration["BAKONG_MERCHANT_NAME"];
+        var bakongMerchantCity = builder.Configuration["BAKONG_MERCHANT_CITY"];
+        var bakongDefaultCurrency = builder.Configuration["BAKONG_DEFAULT_CURRENCY"];
+        var bakongExpiration = builder.Configuration["BAKONG_PAYMENT_EXPIRATION_MINUTES"];
+
+        if (!string.IsNullOrWhiteSpace(bakongBaseUrl)) opt.ApiBaseUrl = bakongBaseUrl;
+        if (!string.IsNullOrWhiteSpace(bakongAccessToken)) opt.ApiToken = bakongAccessToken;
+        if (!string.IsNullOrWhiteSpace(bakongMerchantAccountId)) opt.BakongAccountId = bakongMerchantAccountId;
+        if (!string.IsNullOrWhiteSpace(bakongMerchantName)) opt.MerchantName = bakongMerchantName;
+        if (!string.IsNullOrWhiteSpace(bakongMerchantCity)) opt.MerchantCity = bakongMerchantCity;
+        if (!string.IsNullOrWhiteSpace(bakongDefaultCurrency)) opt.DefaultCurrency = bakongDefaultCurrency;
+        if (int.TryParse(bakongExpiration, out var minutes)) opt.PaymentExpiresMinutes = minutes;
+    });
     builder.Services.AddHttpContextAccessor();
 
     // ── Controllers (camelCase JSON) ─────────────────────────

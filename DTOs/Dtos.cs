@@ -18,6 +18,10 @@ public record PagedResult<T>(IEnumerable<T> Items, int TotalCount, int Page, int
 // ── AUTH ──────────────────────────────────────────────────
 public record LoginRequest([Required] string Username, [Required] string Password);
 public record LoginResponse(string Token, int UserId, string FullName, string Email, string Role, int RoleId);
+public record OtpStartResponse(string OtpToken, string Email, DateTime ExpiresAt, string Purpose);
+public record VerifyOtpRequest(
+    [Required] string OtpToken,
+    [Required, RegularExpression(@"^\d{6}$", ErrorMessage = "OTP code must be exactly 6 digits.")] string Code);
 
 // ── USER ──────────────────────────────────────────────────
 public record UserDto(int UserId, string FullName, string Username, string? Gender,
@@ -167,3 +171,40 @@ public record UpdateMembershipPlanRequest(
     [Range(0, 99999)] decimal Price,
     [Range(1, 120)] int DurationMonths,
     bool IsActive);
+
+// ── PAYMENTS / KHQR ───────────────────────────────────────
+public record KhqrMembershipPaymentRequest(
+    [Range(1, int.MaxValue)] int ClientId,
+    [Required, MaxLength(55)] string Type,
+    [Range(0.01, 99999)] decimal Price,
+    DateTime StartAt,
+    DateTime ExpireAt,
+    [RegularExpression("USD|KHR", ErrorMessage = "Currency must be USD or KHR.")] string Currency = "USD",
+    int? PlanId = null);
+
+public record KhqrCoursePaymentRequest(
+    [Range(1, int.MaxValue)] int ClientId,
+    [Range(1, int.MaxValue)] int CourseId,
+    [RegularExpression("USD|KHR", ErrorMessage = "Currency must be USD or KHR.")] string Currency = "USD");
+
+public record KhqrPaymentDto(
+    int PaymentId,
+    int? ClientId,
+    string Purpose,
+    decimal Amount,
+    string Currency,
+    string Status,
+    string Provider,
+    string Reference,
+    string? ProviderReference,
+    string? Md5Hash,
+    string? QrPayload,
+    string? QrImageDataUri,
+    DateTime CreatedAt,
+    DateTime ExpiresAt,
+    DateTime? PaidAt,
+    int? MembershipId,
+    int? EnrollmentId,
+    string? OrderName);
+
+public record ConfirmPaymentRequest([MaxLength(255)] string? ProviderReference);

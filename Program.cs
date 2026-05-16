@@ -9,6 +9,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Serilog;
 
+LoadDotEnv();
+
 Log.Logger = new LoggerConfiguration().WriteTo.Console().CreateBootstrapLogger();
 
 try
@@ -149,3 +151,42 @@ try
 }
 catch (Exception ex) { Log.Fatal(ex, "Startup failed"); }
 finally { Log.CloseAndFlush(); }
+
+static void LoadDotEnv()
+{
+    var path = FindDotEnvPath();
+    if (path == null) return;
+
+    foreach (var rawLine in File.ReadAllLines(path))
+    {
+        var line = rawLine.Trim();
+        if (line.Length == 0 || line.StartsWith('#')) continue;
+
+        var separator = line.IndexOf('=');
+        if (separator <= 0) continue;
+
+        var key = line[..separator].Trim();
+        var value = line[(separator + 1)..].Trim();
+        if (value.Length >= 2 && value[0] == '"' && value[^1] == '"')
+            value = value[1..^1];
+
+        if (Environment.GetEnvironmentVariable(key) == null)
+            Environment.SetEnvironmentVariable(key, value);
+    }
+}
+
+static string? FindDotEnvPath()
+{
+    foreach (var startPath in new[] { Directory.GetCurrentDirectory(), AppContext.BaseDirectory })
+    {
+        var directory = new DirectoryInfo(startPath);
+        while (directory != null)
+        {
+            var path = Path.Combine(directory.FullName, ".env");
+            if (File.Exists(path)) return path;
+            directory = directory.Parent;
+        }
+    }
+
+    return null;
+}

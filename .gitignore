@@ -53,6 +53,7 @@ appsettings.*.local.json
 secrets.json
 .env
 .env.*
+!.env.example
 **/Properties/launchSettings.json
 
 # ========================
@@ -84,9 +85,8 @@ Thumbs.db
 desktop.ini
 
 # ========================
-# Docker (optional)
+# Docker
 # ========================
-.dockerignore
 
 # ========================
 # Coverage & Test Reports

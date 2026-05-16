@@ -8,20 +8,49 @@ Now includes 6-digit email OTP verification for login/registration and Bakong KH
 
 ## Quick Start
 
-### 1. Run the SQL script
-Open SQL Server Management Studio (SSMS) and run:
-```
-GymManagementDB.sql
-```
-This creates the database, all tables, and seeds 10 members, 4 trainers, 5 courses, and sample data.
+### Docker
 
-### 2. Run the API
+Create your local environment file:
+
+```bash
+cp .env.example .env
+```
+
+Then start the app and SQL Server:
+
+```bash
+docker compose up -d --build
+```
+
+Open: **http://localhost:5000**
+
+On the first run, Docker creates `GymManagementDB`, imports `GymManagementDB.sql`, and seeds the default roles/users. Later runs skip the import when `dbo.tbl_users` already exists, so existing Docker data is not overwritten.
+
+If `Email__Enabled=false`, OTP codes are written to the API logs:
+
+```bash
+docker compose logs gympro
+```
+
+**Default admin login:** `ahboy5518@gmail.com` / `sethadmin`
+
+If you change `MSSQL_SA_PASSWORD` in `.env`, also update the same password inside `ConnectionStrings__DefaultConnection`.
+
+To delete the local SQL Server volume and rebuild a fresh database, run this only when you intentionally want to remove local Docker database data:
+
+```bash
+docker compose down -v
+```
+
+### Local .NET Run
+
+If you run without Docker, create `GymManagementDB` in SQL Server first, then run `GymManagementDB.sql` against it before starting the API:
+
 ```bash
 dotnet run --project GymApi.csproj
 ```
-Then open: **http://localhost:5000**
 
-**Default admin login:** `ahboy5518@gmail.com` / `sethadmin`
+Then open: **http://localhost:5000**
 
 For local development, `Email:Enabled` is `false`, so OTP codes are written to the API logs. OTP codes expire after 5 minutes. For production, configure Gmail SMTP in `.env` with a Gmail app password.
 
@@ -39,7 +68,9 @@ GymApi/
 ├── Middlewares/Middlewares.cs    — Exception + Request logging
 ├── Program.cs                    — App startup, port 5000
 ├── appsettings.json              — DB connection, JWT, rate limiting
-├── GymManagementDB.sql           — Full SQL schema + seed data
+├── GymManagementDB.sql           — SQL Server schema
+├── .env.example                  — Safe Docker environment template
+├── docker/sqlserver/             — Docker database init and seed scripts
 └── wwwroot/
     ├── index.html                — Login page
     ├── app.html                  — Main dashboard
@@ -98,14 +129,14 @@ The payment intent stores the KHQR MD5 and can call Bakong Open API `check_trans
 
 ## Docker Deployment
 
-Edit `.env`, then build and start:
+Create `.env` from the example, edit passwords/secrets, then build and start:
 
 ```bash
-docker compose build gympro
-docker compose up -d
+cp .env.example .env
+docker compose up -d --build
 ```
 
-The compose file starts SQL Server and the API. This project does not use EF migrations yet, so run `GymManagementDB.sql` against the SQL Server container or your production SQL Server before opening the app.
+The compose file starts SQL Server, runs the one-shot `db-init` service, and then starts the API after the database has the required `tbl_*` tables. This project does not use EF migrations yet; Docker initialization uses `GymManagementDB.sql` plus `docker/sqlserver/seed-data.sql`.
 
 ---
 

@@ -17,6 +17,23 @@ services:
       timeout: 5s
       retries: 12
 
+  db-init:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: gympro-db-init
+    env_file:
+      - ${GYMPRO_ENV_FILE:-.env}
+    environment:
+      DB_NAME: "${DB_NAME:-GymManagementDB}"
+      SQLSERVER_HOST: sqlserver
+    volumes:
+      - ./GymManagementDB.sql:/docker/sqlserver/GymManagementDB.sql:ro
+      - ./docker/sqlserver/init-db.sh:/docker/sqlserver/init-db.sh:ro
+      - ./docker/sqlserver/seed-data.sql:/docker/sqlserver/seed-data.sql:ro
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "/docker/sqlserver/init-db.sh"]
+
   gympro:
     build:
       context: .
@@ -28,8 +45,8 @@ services:
     ports:
       - "${APP_PORT:-5000}:5000"
     depends_on:
-      sqlserver:
-        condition: service_healthy
+      db-init:
+        condition: service_completed_successfully
     restart: unless-stopped
 
 volumes:

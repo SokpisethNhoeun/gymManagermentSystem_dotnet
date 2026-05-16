@@ -1,21 +1,25 @@
-
-/* ?? Dark theme (default) ??????????????????????????????????? */
+/* ─── Dark theme (default) ──────────────────────────────────── */
 :root {
-    --bg: #090b10;
+    /* Surfaces — slightly cooler/cleaner blacks */
+    --bg: #0a0c12;
     --s1: #0f1219;
     --s2: #151a25;
     --s3: #1c2230;
     --border: rgba(255,255,255,0.06);
     --border2: rgba(255,255,255,0.11);
     --border3: rgba(255,255,255,0.20);
-    --text: #dde3f0;
-    --text2: #8892aa;
-    --text3: #545e74;
+    /* Text — bumped contrast on primary text */
+    --text: #e5eaf3;
+    --text2: #8f99ad;
+    --text3: #5a637a;
     --shadow: rgba(0,0,0,0.45);
+    /* Brand */
     --accent: #e8621a;
     --accent2: #f0783a;
+    --accent-press: #d4541a;
     --glow: rgba(232,98,26,0.16);
     --glow2: rgba(232,98,26,0.08);
+    /* Semantic */
     --green: #1db97a;
     --green-bg: rgba(29,185,122,0.12);
     --red: #e84848;
@@ -26,33 +30,64 @@
     --purple-bg: rgba(157,107,245,0.12);
     --amber: #f5a623;
     --amber-bg: rgba(245,166,35,0.12);
+    /* Aliases for the new semantic naming used by new components */
+    --success: var(--green);
+    --warn: var(--amber);
+    --danger: var(--red);
+    --info: var(--blue);
+    /* Existing radii (kept for back-compat) */
     --r: 10px;
     --r-sm: 7px;
     --r-lg: 14px;
+    /* New radii — Linear-tight scale */
+    --r-1: 4px;
+    --r-2: 6px;
+    --r-3: 8px;
+    --r-4: 12px;
+    --r-pill: 999px;
+    /* Spacing — 4-pt grid */
+    --sp-1: 4px;
+    --sp-2: 8px;
+    --sp-3: 12px;
+    --sp-4: 16px;
+    --sp-5: 24px;
+    --sp-6: 32px;
+    --sp-7: 40px;
+    --sp-8: 48px;
+    /* Elevation — Stripe-style layered shadows */
+    --e-1: 0 1px 2px rgba(0,0,0,0.20);
+    --e-2: 0 4px 12px rgba(0,0,0,0.28);
+    --e-3: 0 16px 40px rgba(0,0,0,0.40);
+    /* Layout */
     --sidebar: 248px;
     --topbar: 58px;
+    /* Motion */
     --ease: cubic-bezier(.4,0,.2,1);
     --dur: .18s;
     --theme-dur: .28s;
 }
-    /* ?? Light theme ???????????????????????????????????????????? */
-    :root.light {
-        --bg: #f0f2f8;
-        --s1: #ffffff;
-        --s2: #f4f6fb;
-        --s3: #e8ecf5;
-        --border: rgba(0,0,0,0.07);
-        --border2: rgba(0,0,0,0.12);
-        --border3: rgba(0,0,0,0.22);
-        --text: #1a1f2e;
-        --text2: #4a5468;
-        --text3: #8894aa;
-        --shadow: rgba(0,0,0,0.10);
-        --glow: rgba(232,98,26,0.10);
-        --glow2: rgba(232,98,26,0.06);
-        --green-bg: rgba(29,185,122,0.10);
-        --red-bg: rgba(232,72,72,0.10);
-        --blue-bg: rgba(64,136,244,0.10);
-        --purple-bg: rgba(157,107,245,0.10);
-        --amber-bg: rgba(245,166,35,0.10);
-    }
+
+/* ─── Light theme ───────────────────────────────────────────── */
+:root.light {
+    --bg: #f0f2f8;
+    --s1: #ffffff;
+    --s2: #f4f6fb;
+    --s3: #e8ecf5;
+    --border: rgba(0,0,0,0.07);
+    --border2: rgba(0,0,0,0.12);
+    --border3: rgba(0,0,0,0.22);
+    --text: #1a1f2e;
+    --text2: #4a5468;
+    --text3: #8894aa;
+    --shadow: rgba(0,0,0,0.10);
+    --glow: rgba(232,98,26,0.10);
+    --glow2: rgba(232,98,26,0.06);
+    --green-bg: rgba(29,185,122,0.10);
+    --red-bg: rgba(232,72,72,0.10);
+    --blue-bg: rgba(64,136,244,0.10);
+    --purple-bg: rgba(157,107,245,0.10);
+    --amber-bg: rgba(245,166,35,0.10);
+    --e-1: 0 1px 2px rgba(15,18,25,0.06);
+    --e-2: 0 6px 16px rgba(15,18,25,0.08);
+    --e-3: 0 20px 48px rgba(15,18,25,0.14);
+}

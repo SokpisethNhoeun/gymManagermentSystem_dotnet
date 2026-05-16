@@ -140,6 +140,23 @@ public class UsersController(GymDbContext db) : ControllerBase
         await db.SaveChangesAsync();
         return Ok(ApiResponse<string>.Ok("Password reset."));
     }
+
+    // PATCH /api/users/me/password — any authenticated user changes their own password
+    [HttpPatch("me/password")]
+    public async Task<IActionResult> ChangeMyPassword([FromBody] ChangePasswordRequest req)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var userIdClaim = User.FindFirst("user_id")?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+            return Unauthorized(ApiResponse<string>.Fail("Invalid token."));
+        var u = await db.Users.IgnoreQueryFilters().AsTracking().FirstOrDefaultAsync(x => x.UserId == userId);
+        if (u == null) return NotFound(ApiResponse<string>.Fail("Account not found."));
+        if (!BCrypt.Net.BCrypt.Verify(req.CurrentPassword, u.PasswordHash))
+            return BadRequest(ApiResponse<string>.Fail("Current password is incorrect."));
+        u.PasswordHash = BCrypt.Net.BCrypt.HashPassword(req.NewPassword, 11);
+        await db.SaveChangesAsync();
+        return Ok(ApiResponse<string>.Ok("Password changed."));
+    }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -187,6 +204,85 @@ public class MembersController(GymDbContext db) : ControllerBase
         return Ok(ApiResponse<ClientDto>.Ok(
             new ClientDto(c.ClientId, c.UserId, c.User.FullName, c.User.Email,
                 c.Phone, c.Dob, c.EmergencyContact, c.User.IsActive)));
+    }
+
+    // PUT /api/members/me — authenticated client updates their own profile (User + ClientDetail)
+    [HttpPut("me")]
+    public async Task<IActionResult> UpdateMe([FromBody] UpdateMyProfileRequest req)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var userIdClaim = User.FindFirst("user_id")?.Value;
+        if (!int.TryParse(userIdClaim, out var userId))
+            return Unauthorized(ApiResponse<string>.Fail("Invalid token."));
+
+        var u = await db.Users.IgnoreQueryFilters().AsTracking().FirstOrDefaultAsync(x => x.UserId == userId);
+        if (u == null) return NotFound(ApiResponse<string>.Fail("Account not found."));
+
+        if (!string.Equals(u.Email, req.Email, StringComparison.OrdinalIgnoreCase) &&
+            await db.Users.IgnoreQueryFilters().AnyAsync(x => x.UserId != userId && x.Email == req.Email))
+            return Conflict(ApiResponse<string>.Fail("Email already in use."));
+
+        u.FullName = req.FullName;
+        u.Email = req.Email;
+        u.Gender = req.Gender;
+
+        var c = await db.ClientDetails.AsTracking().FirstOrDefaultAsync(x => x.UserId == userId);
+        if (c != null)
+        {
+            c.Phone = req.Phone;
+            c.Dob = req.Dob;
+            c.EmergencyContact = req.EmergencyContact;
+        }
+        await db.SaveChangesAsync();
+        return Ok(ApiResponse<string>.Ok("Profile updated."));
+    }
+
+    // POST /api/members/{id}/promote — Admin promotes a member to Trainer or Staff
+    [HttpPost("{id}/promote"), Authorize(Roles = "Admin")]
+    public async Task<IActionResult> Promote(int id, [FromBody] PromoteMemberRequest req)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var client = await db.ClientDetails.Include(c => c.User)
+            .FirstOrDefaultAsync(c => c.ClientId == id);
+        if (client == null) return NotFound(ApiResponse<string>.Fail("Member not found."));
+
+        if (req.Role == "Trainer")
+        {
+            if (await db.Trainers.AnyAsync(t => t.UserId == client.UserId))
+                return Conflict(ApiResponse<string>.Fail("This member is already a trainer."));
+
+            client.User.RoleId = 3;
+            var trainer = new Trainer { UserId = client.UserId, IsActive = true };
+            db.Trainers.Add(trainer);
+            await db.SaveChangesAsync();
+
+            if (req.SkillIds is { Count: > 0 })
+            {
+                db.TrainerSkillMaps.AddRange(req.SkillIds.Distinct()
+                    .Select(sid => new TrainerSkillMap { TrainerId = trainer.TrainerId, SkillId = sid }));
+                await db.SaveChangesAsync();
+            }
+            return Ok(ApiResponse<object>.Ok(new { trainer.TrainerId, role = "Trainer" }, "Member promoted to Trainer."));
+        }
+        else // Staff
+        {
+            if (await db.StaffDetails.AnyAsync(s => s.UserId == client.UserId))
+                return Conflict(ApiResponse<string>.Fail("This member is already staff."));
+
+            client.User.RoleId = 2;
+            var staff = new StaffDetail
+            {
+                UserId = client.UserId,
+                Phone = req.Phone ?? client.Phone,
+                PlaceOfBirth = req.PlaceOfBirth,
+                Dob = req.Dob ?? client.Dob,
+                Salary = req.Salary ?? 0m,
+                IsActive = true
+            };
+            db.StaffDetails.Add(staff);
+            await db.SaveChangesAsync();
+            return Ok(ApiResponse<object>.Ok(new { staff.StaffId, role = "Staff" }, "Member promoted to Staff."));
+        }
     }
 
     [HttpPost, Authorize(Roles = "Admin,Staff")]
@@ -431,6 +527,34 @@ public class TrainersController(GymDbContext db) : ControllerBase
         if (t == null) return NotFound(ApiResponse<string>.Fail("Not found."));
         t.IsActive = !t.IsActive; await db.SaveChangesAsync();
         return Ok(ApiResponse<string>.Ok(t.IsActive ? "Activated." : "Deactivated."));
+    }
+
+    // POST /api/trainers/{id}/skills — Admin adds a skill to an existing trainer
+    [HttpPost("{id}/skills"), Authorize(Roles = "Admin")]
+    public async Task<IActionResult> AddSkill(int id, [FromBody] AddTrainerSkillRequest req)
+    {
+        if (!ModelState.IsValid) return BadRequest(ModelState);
+        var trainer = await db.Trainers.FirstOrDefaultAsync(t => t.TrainerId == id);
+        if (trainer == null) return NotFound(ApiResponse<string>.Fail("Trainer not found."));
+        var skillExists = await db.TrainerSkills.AnyAsync(s => s.SkillId == req.SkillId);
+        if (!skillExists) return NotFound(ApiResponse<string>.Fail("Skill not found."));
+        if (await db.TrainerSkillMaps.AnyAsync(m => m.TrainerId == id && m.SkillId == req.SkillId))
+            return Conflict(ApiResponse<string>.Fail("Trainer already has this skill."));
+        db.TrainerSkillMaps.Add(new TrainerSkillMap { TrainerId = id, SkillId = req.SkillId });
+        await db.SaveChangesAsync();
+        return Ok(ApiResponse<string>.Ok("Skill added."));
+    }
+
+    // DELETE /api/trainers/{id}/skills/{skillId} — Admin removes a skill from a trainer
+    [HttpDelete("{id}/skills/{skillId}"), Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RemoveSkill(int id, int skillId)
+    {
+        var map = await db.TrainerSkillMaps.AsTracking()
+            .FirstOrDefaultAsync(m => m.TrainerId == id && m.SkillId == skillId);
+        if (map == null) return NotFound(ApiResponse<string>.Fail("Skill not assigned to this trainer."));
+        db.TrainerSkillMaps.Remove(map);
+        await db.SaveChangesAsync();
+        return Ok(ApiResponse<string>.Ok("Skill removed."));
     }
 }
 

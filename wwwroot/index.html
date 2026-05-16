@@ -5,62 +5,149 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark light">
 <title>GymPro — Sign In</title>
+<script>
+  // Already-logged-in guard: skip the login form if a valid token exists.
+  (function () {
+    try {
+      var t = localStorage.getItem('gympro-token');
+      if (!t) return;
+      var r = (localStorage.getItem('gympro-role') || '').trim().toLowerCase();
+      var dest = (r === 'client' || r === 'trainer') ? 'portal.html' : 'app.html';
+      // replace() so the back button doesn't bring them right back to login
+      window.location.replace(dest);
+    } catch (e) { /* localStorage blocked — fall through to login */ }
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
-html{background:#090b10}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#090b10;color:#dde3f0;min-height:100vh;display:flex;align-items:center;justify-content:center}
-.card{width:360px;background:#0f1219;border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:36px 32px}
-.logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
-.logo-icon{width:34px;height:34px;background:#e8621a;border-radius:8px;display:flex;align-items:center;justify-content:center}
-.logo-icon svg{width:17px;height:17px;fill:white}
-.logo-text{font-size:20px;font-weight:800;letter-spacing:-.02em}
-.logo-text span{color:#e8621a}
-h1{font-size:20px;font-weight:700;margin-bottom:6px}
-.sub{font-size:13px;color:#545e74;margin-bottom:24px}
-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#545e74;margin-bottom:5px}
-input{width:100%;background:#151a25;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 12px;font-size:13.5px;color:#dde3f0;outline:none;font-family:inherit;margin-bottom:14px}
-input:focus{border-color:#e8621a;box-shadow:0 0 0 3px rgba(232,98,26,.15)}
-.btn{width:100%;background:#e8621a;color:white;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;display:flex;align-items:center;justify-content:center;gap:7px}
-.btn:hover{background:#f0783a}
-.btn:disabled{opacity:.6;cursor:not-allowed}
-.err{display:none;background:rgba(232,72,72,.12);color:#e84848;border:1px solid rgba(232,72,72,.2);border-radius:7px;padding:10px 12px;font-size:12.5px;margin-bottom:14px}
-.footer{text-align:center;margin-top:20px;font-size:11.5px;color:#545e74}
-.footer a{color:#e8621a;text-decoration:none}
-.home-link{display:block;text-align:center;margin-top:10px;font-size:12px;color:#545e74;text-decoration:none}
-.home-link:hover{color:#e8621a}
-.otp-panel{display:none;margin-top:16px;border-top:1px solid rgba(255,255,255,.08);padding-top:18px}
-.otp-note{font-size:12.5px;line-height:1.5;color:#7a8598;margin-bottom:12px}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  html{background:#0a0c12;color-scheme:dark}
+  body{
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:
+      radial-gradient(900px 480px at 18% -10%, rgba(232,98,26,.12), transparent 60%),
+      radial-gradient(720px 420px at 100% 110%, rgba(64,136,244,.08), transparent 65%),
+      #0a0c12;
+    color:#e5eaf3;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:24px;
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  /* Subtle dotted grid backdrop, fades behind the card */
+  body::before{
+    content:'';
+    position:fixed;
+    inset:0;
+    background-image:radial-gradient(rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size:24px 24px;
+    mask-image:radial-gradient(800px 600px at 50% 40%, #000 30%, transparent 80%);
+    pointer-events:none;
+    z-index:0;
+  }
+  .wrap{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:18px;width:100%;max-width:420px}
+  .brand{display:flex;align-items:center;gap:10px}
+  .brand-icon{
+    width:36px;height:36px;border-radius:9px;
+    background:linear-gradient(135deg,#e8621a,#f0783a);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 0 30px rgba(232,98,26,.30), 0 1px 2px rgba(0,0,0,.4);
+  }
+  .brand-icon svg{width:18px;height:18px;fill:white}
+  .brand-text{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;letter-spacing:-.02em}
+  .brand-text span{color:#e8621a}
+  .card{
+    width:100%;
+    background:linear-gradient(180deg, rgba(21,26,37,.85), rgba(15,18,25,.85));
+    backdrop-filter:blur(12px);
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;
+    padding:32px 28px 24px;
+    box-shadow:0 20px 60px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.04);
+  }
+  h1{font-size:19px;font-weight:600;letter-spacing:-.01em}
+  .sub{font-size:13px;color:#8f99ad;margin-top:4px;margin-bottom:24px}
+  label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.07em;color:#5a637a;margin-bottom:6px;margin-top:14px}
+  label:first-of-type{margin-top:0}
+  input{
+    width:100%;background:#0f1219;border:1px solid rgba(255,255,255,.09);
+    border-radius:8px;padding:11px 13px;font-size:13.5px;color:#e5eaf3;
+    outline:none;font-family:inherit;
+    transition:border-color .15s, box-shadow .15s, background .15s;
+  }
+  input::placeholder{color:#5a637a}
+  input:hover{border-color:rgba(255,255,255,.14)}
+  input:focus{border-color:#e8621a;box-shadow:0 0 0 3px rgba(232,98,26,.16);background:#151a25}
+  .btn{
+    width:100%;margin-top:18px;
+    background:#e8621a;color:white;border:none;border-radius:8px;
+    padding:12px;font-size:14px;font-weight:600;
+    cursor:pointer;font-family:inherit;
+    display:flex;align-items:center;justify-content:center;gap:7px;
+    transition:background .15s, transform .08s, box-shadow .15s;
+    box-shadow:0 1px 2px rgba(0,0,0,.30), 0 0 18px rgba(232,98,26,.20);
+  }
+  .btn:hover{background:#f0783a}
+  .btn:active{transform:translateY(1px)}
+  .btn:disabled{opacity:.6;cursor:not-allowed;transform:none}
+  .err{display:none;background:rgba(232,72,72,.12);color:#e84848;border:1px solid rgba(232,72,72,.22);border-radius:8px;padding:10px 12px;font-size:12.5px;margin-bottom:14px;line-height:1.4}
+  .otp-panel{display:none;margin-top:20px;border-top:1px solid rgba(255,255,255,.06);padding-top:20px}
+  .otp-note{font-size:12.5px;line-height:1.55;color:#8f99ad;margin-bottom:14px}
+  #otp-code{letter-spacing:.30em;text-align:center;font-family:ui-monospace,'JetBrains Mono',monospace;font-size:18px;font-weight:600}
+  .foot{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:18px;font-size:11.5px;color:#5a637a;
+  }
+  .foot a{color:#8f99ad;text-decoration:none;transition:color .15s}
+  .foot a:hover{color:#e8621a}
+  .kbd{font-family:ui-monospace,monospace;font-size:10.5px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:4px;padding:1px 5px;color:#8f99ad}
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important}
+  }
 </style>
 </head>
 <body>
-<div class="card">
-  <div class="logo">
-    <div class="logo-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></div>
-    <div class="logo-text">Gym<span>Pro</span></div>
+<div class="wrap">
+  <div class="brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9z"/></svg></div>
+    <div class="brand-text">Gym<span>Pro</span></div>
   </div>
-  <h1>Welcome back</h1>
-  <p class="sub">Sign in to your account</p>
 
-  <div class="err" id="err"></div>
+  <div class="card">
+    <h1>Welcome back</h1>
+    <p class="sub">Sign in to continue to your dashboard</p>
 
-  <label>Username</label>
-  <input type="text" id="username" placeholder="admin" autocomplete="username">
+    <div class="err" id="err"></div>
 
-  <label>Password</label>
-  <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
+    <label>Username</label>
+    <input type="text" id="username" placeholder="admin" autocomplete="username" autofocus>
 
-  <button class="btn" id="btn" onclick="doLogin()">
-    <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-    Sign In
-  </button>
+    <label>Password</label>
+    <input type="password" id="password" placeholder="••••••••" autocomplete="current-password">
 
-  <div class="otp-panel" id="otp-panel">
-    <div class="otp-note" id="otp-note">Enter the 6-digit verification code sent to your email.</div>
-    <label>Verification Code</label>
-    <input type="text" id="otp-code" placeholder="000000" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
-    <button class="btn" id="otp-btn" onclick="verifyOtp()">Verify Code</button>
+    <button class="btn" id="btn" onclick="doLogin()">
+      <svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      Sign in
+    </button>
+
+    <div class="otp-panel" id="otp-panel">
+      <div class="otp-note" id="otp-note">Enter the 6-digit verification code sent to your email.</div>
+      <label>Verification code</label>
+      <input type="text" id="otp-code" placeholder="······" inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+      <button class="btn" id="otp-btn" onclick="verifyOtp()">Verify &amp; continue</button>
+    </div>
+
+    <div class="foot">
+      <a href="home.html">← Public site</a>
+      <span><span class="kbd">Enter</span> to submit</span>
+    </div>
   </div>
-  <a class="home-link" href="home.html">← View public site</a>
 </div>
 
 <script>
@@ -92,7 +179,6 @@ async function doLogin() {
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json.message || json.Message || 'Invalid credentials.');
 
-    // ApiResponse<OtpStartResponse> → { data: { otpToken, email, expiresAt, purpose } }
     const d = json.data || json;
     pendingOtp = d.otpToken || d.OtpToken;
     pendingUsername = u;
@@ -101,14 +187,14 @@ async function doLogin() {
     document.getElementById('otp-note').textContent = 'Code sent to ' + (d.email || d.Email || 'your email') + '. It expires soon.';
     document.getElementById('otp-code').focus();
     btn.disabled = false;
-    btn.textContent = 'Send New Code';
+    btn.textContent = 'Send new code';
   } catch(e) {
     const msg = e.message === 'Failed to fetch'
-      ? 'Cannot reach API — is dotnet running on port 5000?'
+      ? 'Cannot reach API — is the server running on port 5000?'
       : e.message;
     showErr(msg);
     btn.disabled = false;
-    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Sign In';
+    btn.innerHTML = '<svg width="14" height="14" fill="none" stroke="white" stroke-width="2.2" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Sign in';
   }
 }
 
@@ -118,7 +204,7 @@ async function verifyOtp() {
   if (!pendingOtp) { showErr('Start login first.'); return; }
   if (!/^\d{6}$/.test(code)) { showErr('Enter the 6-digit code.'); return; }
   btn.disabled = true;
-  btn.textContent = 'Verifying...';
+  btn.textContent = 'Verifying…';
   try {
     const res = await fetch('/api/auth/verify-otp', {
       method: 'POST',
@@ -131,7 +217,7 @@ async function verifyOtp() {
   } catch(e) {
     showErr(e.message);
     btn.disabled = false;
-    btn.textContent = 'Verify Code';
+    btn.textContent = 'Verify & continue';
   }
 }
 

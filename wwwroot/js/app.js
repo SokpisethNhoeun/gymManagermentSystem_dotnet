@@ -1015,7 +1015,7 @@ async function loadDashboard() {
     } catch (e) { console.warn('Dashboard charts:', e.message); }
 
     // Load enrollment cards (Admin/Staff only)
-    if (role !== 'Client' && role !== 'Trainer') { loadDashboardEnrollments(); }
+    if (role !== 'Client' && role !== 'Trainer') { loadDashboardEnrollments(); loadSkillCatalog(); }
 }
 
 
@@ -1075,17 +1075,9 @@ async function saveMyProfile() {
     if (!fullName) { toast('Full name is required', 'warn'); return; }
     if (!email) { toast('Email is required', 'warn'); return; }
 
-    // Get current user id from token
-    const token = Api.getToken();
-    if (!token) { toast('Not logged in', 'err'); return; }
-    let userId;
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        userId = payload.user_id || payload.sub;
-    } catch (e) { toast('Could not read token', 'err'); return; }
-
-    try {
-        await Api.put(`/users/${userId}`, { fullName, gender: null, email, isActive: true });
+        // PUT /api/members/me works for any authenticated user — updates User + (if exists) ClientDetail
+        await Api.updateMe({ fullName, email, gender: null, phone: null, dob: null, emergencyContact: null });
         localStorage.setItem('gympro-user', fullName);
         const nameEl = document.getElementById('sidebar-name'); if (nameEl) nameEl.textContent = fullName;
         const avEl = document.getElementById('sidebar-av');
@@ -1095,20 +1087,16 @@ async function saveMyProfile() {
 }
 
 async function changeMyPassword() {
+    const cur = document.getElementById('acc-cur-pw')?.value;
     const np = document.getElementById('acc-new-pw')?.value;
     const cp = document.getElementById('acc-confirm-pw')?.value;
+    if (!cur) { toast('Enter your current password', 'warn'); return; }
     if (!np || np.length < 6) { toast('Password must be at least 6 characters', 'warn'); return; }
     if (np !== cp) { toast('Passwords do not match', 'warn'); return; }
 
-    const token = Api.getToken();
-    let userId;
     try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        userId = payload.user_id || payload.sub;
-    } catch (e) { toast('Could not read token', 'err'); return; }
-
-    try {
-        await Api.patch(`/users/${userId}/reset-password`, { newPassword: np });
+        await Api.changeMyPassword({ currentPassword: cur, newPassword: np });
+        document.getElementById('acc-cur-pw').value = '';
         document.getElementById('acc-new-pw').value = '';
         document.getElementById('acc-confirm-pw').value = '';
         toast('Password changed', 'ok');
@@ -1201,7 +1189,8 @@ async function loadMembers() {
             const activ = m.isActive;
             const email = m.email || '';
             const phone = m.phone || '—';
-            return `<tr onclick="openMember({id:${id},name:'${name.replace(/'/g, "\\'")}',plan:'Member',status:'${activ ? 'Active' : 'Inactive'}',email:'${email}',phone:'${phone}',dob:'${m.dob || ''}',emergencyContact:'${m.emergencyContact || ''}'})"
+            const safeName = name.replace(/'/g, "\\'");
+            return `<tr onclick="openMember({id:${id},name:'${safeName}',plan:'Member',status:'${activ ? 'Active' : 'Inactive'}',email:'${email}',phone:'${phone}',dob:'${m.dob || ''}',emergencyContact:'${m.emergencyContact || ''}'})"
               data-name="${name.toLowerCase()}" data-status="${activ ? 'Active' : 'Inactive'}">
         <td><div class="cell-flex"><div class="av" style="${avColor(i)}">${initials(name)}</div>
           <div><div>${name}</div><div class="text-muted" style="font-size:11px">${email}</div></div></div></td>
@@ -1209,7 +1198,10 @@ async function loadMembers() {
         <td class="text-muted">${phone}</td>
         <td><span class="badge ${activ ? 'b-green badge-dot' : 'b-red badge-dot'}">${activ ? 'Active' : 'Inactive'}</span></td>
         <td class="text-muted">${m.dob ? fmtDate(m.dob) : '—'}</td>
-        <td><button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openMember({id:${id},name:'${name.replace(/'/g, "\\'")}',plan:'Member',status:'${activ ? 'Active' : 'Inactive'}',email:'${email}',phone:'${phone}'})">View</button></td>
+        <td>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openMember({id:${id},name:'${safeName}',plan:'Member',status:'${activ ? 'Active' : 'Inactive'}',email:'${email}',phone:'${phone}'})">View</button>
+          <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openPromoteModal(${id},'${safeName}')">Promote</button>
+        </td>
       </tr>`;
         }).join(''));
     } catch (e) { setHTML('members-tbody', apiError(e.message, 6)); }
@@ -1230,6 +1222,7 @@ async function loadTrainers() {
             const name = t.fullName || '—';
             const id = t.trainerId;
             const activ = t.isActive;
+            const safeName = name.replace(/'/g, "\\'");
             // skills is List<string> from TrainerDto
             const skills = (t.skills || []).filter(Boolean).join(' · ') || '—';
             return `<div class="card" style="text-align:center">
@@ -1238,7 +1231,10 @@ async function loadTrainers() {
         <div style="font-size:11px;color:var(--text3);margin-bottom:4px">${t.email || ''}</div>
         <div style="font-size:11px;color:var(--text3);margin-bottom:12px">${skills}</div>
         <span class="badge ${activ ? 'b-green badge-dot' : 'b-muted'}" style="width:100%;justify-content:center">${activ ? 'Active' : 'Inactive'}</span>
-        <div style="margin-top:10px"><button class="btn btn-ghost btn-sm" onclick="toggleTrainer(${id},'${name.replace(/'/g, "\\'")}')">Toggle Active</button></div>
+        <div style="margin-top:10px;display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-sm" onclick="openAddSkillModal(${id},'${safeName}')">+ Skill</button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleTrainer(${id},'${safeName}')">Toggle Active</button>
+        </div>
       </div>`;
         }).join('') + `<div class="card" style="border-style:dashed;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;opacity:.4" onclick="openOverlay('modal-overlay','trainer-modal')">
       <div style="font-size:28px;color:var(--text3);margin-bottom:8px">+</div>
@@ -1249,6 +1245,171 @@ async function loadTrainers() {
 async function toggleTrainer(id, name) {
     try { await Api.toggleTrainer(id); toast(`${name} toggled`, 'ok'); loadTrainers(); }
     catch (e) { toast(e.message, 'err'); }
+}
+
+// ── Add Skill to existing trainer ───────────────────────────
+async function openAddSkillModal(trainerId, trainerName) {
+    document.getElementById('as-trainer-id').value = trainerId;
+    document.getElementById('as-sub').textContent = `Assign an existing skill to ${trainerName}.`;
+    document.getElementById('as-err').style.display = 'none';
+    const sel = document.getElementById('as-skill');
+    sel.innerHTML = '<option value="">Loading…</option>';
+    openOverlay('modal-overlay', 'add-skill-modal');
+    try {
+        const skills = await Api.getSkills() || [];
+        sel.innerHTML = '<option value="">— select skill —</option>' +
+            skills.map(s => `<option value="${s.skillId}">${s.skillName}</option>`).join('');
+    } catch (e) {
+        sel.innerHTML = '<option value="">— failed to load —</option>';
+        const err = document.getElementById('as-err'); err.textContent = e.message; err.style.display = 'block';
+    }
+}
+async function submitAddSkill() {
+    const trainerId = parseInt(document.getElementById('as-trainer-id').value);
+    const skillId = parseInt(document.getElementById('as-skill').value);
+    const err = document.getElementById('as-err'); err.style.display = 'none';
+    if (!trainerId || !skillId) { err.textContent = 'Select a skill.'; err.style.display = 'block'; return; }
+    btnLoading('as-submit-btn', true, 'Add Skill');
+    try {
+        await Api.addTrainerSkill(trainerId, skillId);
+        toast('Skill added', 'ok');
+        closeOverlay('modal-overlay', 'add-skill-modal');
+        loadTrainers();
+    } catch (e) { err.textContent = e.message; err.style.display = 'block'; }
+    finally { btnLoading('as-submit-btn', false, 'Add Skill'); }
+}
+
+// ── Skill catalog (dashboard) ───────────────────────────────
+async function loadSkillCatalog() {
+    const box = document.getElementById('dash-skills');
+    if (!box) return;
+    box.innerHTML = 'Loading…';
+    try {
+        const skills = await Api.getSkills() || [];
+        if (!skills.length) { box.innerHTML = '<span style="color:var(--text3)">No skills yet — click + New Skill above.</span>'; return; }
+        box.innerHTML = skills.map(s => `<span class="badge b-blue">${s.skillName}</span>`).join('');
+    } catch (e) {
+        box.innerHTML = `<span style="color:var(--red)">${e.message}</span>`;
+    }
+}
+async function submitCreateSkill() {
+    const name = document.getElementById('sc-name').value.trim();
+    const err = document.getElementById('sc-err'); err.style.display = 'none';
+    if (!name) { err.textContent = 'Skill name is required.'; err.style.display = 'block'; return; }
+    btnLoading('sc-submit-btn', true, 'Create Skill');
+    try {
+        await Api.createSkill({ skillName: name });
+        toast('Skill created', 'ok');
+        document.getElementById('sc-name').value = '';
+        closeOverlay('modal-overlay', 'skill-create-modal');
+        loadSkillCatalog();
+    } catch (e) { err.textContent = e.message; err.style.display = 'block'; }
+    finally { btnLoading('sc-submit-btn', false, 'Create Skill'); }
+}
+
+// ── Dashboard "Promote Member" (with member picker) ─────────
+function onPickerRoleChange() {
+    const role = document.getElementById('pp-role').value;
+    document.getElementById('pp-trainer-fields').style.display = role === 'Trainer' ? '' : 'none';
+    document.getElementById('pp-staff-fields').style.display = role === 'Staff' ? '' : 'none';
+}
+async function openDashPromoteModal() {
+    document.getElementById('pp-err').style.display = 'none';
+    document.getElementById('pp-role').value = 'Trainer';
+    document.getElementById('pp-salary').value = '';
+    document.getElementById('pp-place').value = '';
+    onPickerRoleChange();
+    const memberSel = document.getElementById('pp-client');
+    const skillSel = document.getElementById('pp-skills');
+    memberSel.innerHTML = '<option value="">Loading…</option>';
+    skillSel.innerHTML = '<option>Loading…</option>';
+    openOverlay('modal-overlay', 'promote-picker-modal');
+    try {
+        const [members, skills] = await Promise.all([Api.getMembers(), Api.getSkills()]);
+        memberSel.innerHTML = '<option value="">— select member —</option>' +
+            (members || []).map(m => `<option value="${m.clientId}">${m.fullName} (#${m.clientId})</option>`).join('');
+        skillSel.innerHTML = (skills || []).map(s => `<option value="${s.skillId}">${s.skillName}</option>`).join('');
+    } catch (e) {
+        const err = document.getElementById('pp-err'); err.textContent = e.message; err.style.display = 'block';
+    }
+}
+async function submitPickerPromote() {
+    const clientId = parseInt(document.getElementById('pp-client').value);
+    const role = document.getElementById('pp-role').value;
+    const err = document.getElementById('pp-err'); err.style.display = 'none';
+    if (!clientId) { err.textContent = 'Select a member.'; err.style.display = 'block'; return; }
+    const body = { role };
+    if (role === 'Trainer') {
+        body.skillIds = Array.from(document.getElementById('pp-skills').selectedOptions)
+            .map(o => parseInt(o.value)).filter(n => !isNaN(n));
+    } else {
+        const salary = parseFloat(document.getElementById('pp-salary').value);
+        if (!isNaN(salary)) body.salary = salary;
+        const place = document.getElementById('pp-place').value.trim();
+        if (place) body.placeOfBirth = place;
+    }
+    btnLoading('pp-submit-btn', true, 'Promote');
+    try {
+        await Api.promoteMember(clientId, body);
+        toast(`Promoted to ${role}`, 'ok');
+        closeOverlay('modal-overlay', 'promote-picker-modal');
+        if (_currentPage === 'members') loadMembers();
+        if (_currentPage === 'trainers') loadTrainers();
+        if (_currentPage === 'staff') loadStaff();
+    } catch (e) { err.textContent = e.message; err.style.display = 'block'; }
+    finally { btnLoading('pp-submit-btn', false, 'Promote'); }
+}
+
+// ── Promote member to Trainer/Staff ─────────────────────────
+function onPromoteRoleChange() {
+    const role = document.getElementById('pr-role').value;
+    document.getElementById('pr-trainer-fields').style.display = role === 'Trainer' ? '' : 'none';
+    document.getElementById('pr-staff-fields').style.display = role === 'Staff' ? '' : 'none';
+}
+async function openPromoteModal(clientId, memberName) {
+    document.getElementById('pr-client-id').value = clientId;
+    document.getElementById('pr-sub').textContent = `Convert ${memberName} into a Trainer or Staff account.`;
+    document.getElementById('pr-err').style.display = 'none';
+    document.getElementById('pr-role').value = 'Trainer';
+    document.getElementById('pr-salary').value = '';
+    document.getElementById('pr-place').value = '';
+    onPromoteRoleChange();
+    const sel = document.getElementById('pr-skills');
+    sel.innerHTML = '<option>Loading…</option>';
+    openOverlay('modal-overlay', 'promote-modal');
+    try {
+        const skills = await Api.getSkills() || [];
+        sel.innerHTML = skills.map(s => `<option value="${s.skillId}">${s.skillName}</option>`).join('');
+    } catch (e) {
+        sel.innerHTML = '';
+        const err = document.getElementById('pr-err'); err.textContent = 'Could not load skills: ' + e.message; err.style.display = 'block';
+    }
+}
+async function submitPromote() {
+    const clientId = parseInt(document.getElementById('pr-client-id').value);
+    const role = document.getElementById('pr-role').value;
+    const err = document.getElementById('pr-err'); err.style.display = 'none';
+    if (!clientId || !role) { err.textContent = 'Missing required fields.'; err.style.display = 'block'; return; }
+    const body = { role };
+    if (role === 'Trainer') {
+        body.skillIds = Array.from(document.getElementById('pr-skills').selectedOptions)
+            .map(o => parseInt(o.value)).filter(n => !isNaN(n));
+    } else {
+        const salary = parseFloat(document.getElementById('pr-salary').value);
+        if (!isNaN(salary)) body.salary = salary;
+        const place = document.getElementById('pr-place').value.trim();
+        if (place) body.placeOfBirth = place;
+    }
+    btnLoading('pr-submit-btn', true, 'Promote');
+    try {
+        await Api.promoteMember(clientId, body);
+        toast(`Promoted to ${role}`, 'ok');
+        closeOverlay('modal-overlay', 'promote-modal');
+        loadMembers();
+        if (_currentPage === 'trainers') loadTrainers();
+        if (_currentPage === 'staff') loadStaff();
+    } catch (e) { err.textContent = e.message; err.style.display = 'block'; }
+    finally { btnLoading('pr-submit-btn', false, 'Promote'); }
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1662,8 +1823,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.addEventListener('keydown', e => {
-        if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); document.getElementById('global-search')?.focus(); }
-        if (e.key === 'Escape') closeAll();
+        if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+            e.preventDefault();
+            if (document.getElementById('cmdk-backdrop')) openCmdk();
+            else document.getElementById('global-search')?.focus();
+        }
+        if (e.key === 'Escape') { closeCmdk(); closeAll(); }
     });
 
     document.getElementById('so-overlay')?.addEventListener('click', closeMember);
@@ -1678,3 +1843,145 @@ document.addEventListener('DOMContentLoaded', () => {
         try { navigate(location.hash.replace('#', '') || 'dashboard', true); } catch (e) { console.error(e); }
     });
 });
+
+/* ═══════════════════════════════════════════════════════════════
+   Command palette (⌘K) — Linear-style global navigation + search
+   ═══════════════════════════════════════════════════════════════ */
+(function () {
+    const NAV_PAGES = [
+        { id: 'dashboard',    label: 'Dashboard',    icon: 'home',     meta: 'Go to' },
+        { id: 'analytics',    label: 'Analytics',    icon: 'chart',    meta: 'Go to' },
+        { id: 'members',      label: 'Members',      icon: 'users',    meta: 'Go to' },
+        { id: 'trainers',     label: 'Trainers',     icon: 'user',     meta: 'Go to' },
+        { id: 'staff',        label: 'Staff',        icon: 'user',     meta: 'Go to' },
+        { id: 'checkins',     label: 'Check-ins',    icon: 'check',    meta: 'Go to' },
+        { id: 'courses',      label: 'Courses',      icon: 'book',     meta: 'Go to' },
+        { id: 'memberships',  label: 'Memberships',  icon: 'card',     meta: 'Go to' },
+        { id: 'payments',     label: 'Payments',     icon: 'dollar',   meta: 'Go to' },
+        { id: 'settings',     label: 'Settings',     icon: 'settings', meta: 'Go to' },
+        { id: 'auditlog',     label: 'Audit Log',    icon: 'file',     meta: 'Go to' },
+    ];
+    let _items = [];
+    let _activeIdx = 0;
+
+    function iconSvg(name) {
+        if (window.GymIcons?.svg) {
+            try { return GymIcons.svg(name); } catch (e) { /* fall through */ }
+        }
+        // Fallback: simple search icon
+        return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="13" height="13"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+    }
+
+    function collectLoadedMembers() {
+        return Array.from(document.querySelectorAll('#members-tbody tr[data-name]'))
+            .slice(0, 50)
+            .map(tr => ({
+                kind: 'member',
+                label: tr.querySelector('td')?.innerText?.split('\n')[0]?.trim() || tr.dataset.name,
+                meta: tr.dataset.status === 'Active' ? 'Member · Active' : 'Member · Inactive',
+                icon: 'user',
+                el: tr,
+            }));
+    }
+
+    function buildItems(query) {
+        const q = (query || '').trim().toLowerCase();
+        const nav = NAV_PAGES.map(p => ({ kind: 'nav', ...p }));
+        const members = collectLoadedMembers();
+        const all = [...nav, ...members];
+        if (!q) return nav.slice(0, 6);
+        return all.filter(it => it.label.toLowerCase().includes(q)).slice(0, 30);
+    }
+
+    function render(query) {
+        const list = document.getElementById('cmdk-list');
+        const empty = document.getElementById('cmdk-empty');
+        if (!list) return;
+        _items = buildItems(query);
+        _activeIdx = 0;
+        const q = (query || '').trim();
+        let html = '';
+        if (q) {
+            html += `<div class="cmdk-section">${_items.length ? 'Results' : 'No matches'}</div>`;
+        } else {
+            html += `<div class="cmdk-section">Jump to</div>`;
+        }
+        _items.forEach((it, idx) => {
+            html += `<div class="cmdk-item${idx === 0 ? ' is-active' : ''}" data-idx="${idx}">
+                <span class="cmdk-icon">${iconSvg(it.icon)}</span>
+                <span>${escapeHtml(it.label)}</span>
+                <span class="cmdk-meta">${escapeHtml(it.meta || '')}</span>
+            </div>`;
+        });
+        list.innerHTML = html;
+        if (empty) empty.style.display = _items.length ? 'none' : '';
+        list.querySelectorAll('.cmdk-item').forEach(el => {
+            el.addEventListener('mouseenter', () => setActive(Number(el.dataset.idx)));
+            el.addEventListener('click', () => selectActive());
+        });
+    }
+
+    function escapeHtml(s) { return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+    function setActive(idx) {
+        if (idx < 0 || idx >= _items.length) return;
+        _activeIdx = idx;
+        document.querySelectorAll('#cmdk-list .cmdk-item').forEach((el, i) => {
+            el.classList.toggle('is-active', i === idx);
+        });
+        // Scroll into view if needed
+        const active = document.querySelector('#cmdk-list .cmdk-item.is-active');
+        if (active) active.scrollIntoView({ block: 'nearest' });
+    }
+
+    function selectActive() {
+        const it = _items[_activeIdx];
+        if (!it) return;
+        if (it.kind === 'nav') {
+            window.closeCmdk?.();
+            if (typeof navigate === 'function') navigate(it.id);
+        } else if (it.kind === 'member' && it.el) {
+            window.closeCmdk?.();
+            if (typeof navigate === 'function') navigate('members');
+            it.el.click();
+        }
+    }
+
+    window.openCmdk = function () {
+        const bd = document.getElementById('cmdk-backdrop');
+        const input = document.getElementById('cmdk-input');
+        if (!bd) return;
+        bd.classList.add('is-open');
+        if (input) { input.value = ''; setTimeout(() => input.focus(), 30); }
+        render('');
+    };
+    window.closeCmdk = function () {
+        const bd = document.getElementById('cmdk-backdrop');
+        if (bd) bd.classList.remove('is-open');
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const input = document.getElementById('cmdk-input');
+        if (!input) return;
+        input.addEventListener('input', e => render(e.target.value));
+        input.addEventListener('keydown', e => {
+            if (e.key === 'ArrowDown') { e.preventDefault(); setActive(Math.min(_items.length - 1, _activeIdx + 1)); }
+            else if (e.key === 'ArrowUp') { e.preventDefault(); setActive(Math.max(0, _activeIdx - 1)); }
+            else if (e.key === 'Enter') { e.preventDefault(); selectActive(); }
+            else if (e.key === 'Escape') { e.preventDefault(); window.closeCmdk(); }
+        });
+        // Re-bind global Cmd+K (some browsers may have eaten the early binding)
+        document.addEventListener('keydown', e => {
+            if ((e.metaKey || e.ctrlKey) && (e.key === 'k' || e.key === 'K')) {
+                e.preventDefault();
+                window.openCmdk();
+            }
+        });
+    });
+})();
+
+/* Money formatter helper — tabular USD */
+window.fmtUsd = function (v) {
+    const n = Number(v || 0);
+    return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};

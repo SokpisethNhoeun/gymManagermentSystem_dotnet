@@ -653,7 +653,12 @@
         }
 
             .modal-overlay.open {
-                display: flex
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                padding-top: 10%;
+                padding-bottom: 10%;
+
             }
 
         .modal-box {
@@ -662,7 +667,9 @@
             border-radius: 14px;
             padding: 26px;
             width: 400px;
-            max-width: 94vw
+            max-width: 94vw;
+            height: 100%;
+            overflow-y: scroll;
         }
 
         .modal-title {
@@ -821,13 +828,33 @@
         </div>
         <div id="tab-profile" style="display:none">
             <div class="card" style="max-width:460px">
-                <div class="card-title">My Profile</div><div class="card-sub">Your account details</div>
-                <div class="form-group"><label class="form-lbl">Full Name</label><input class="form-input" id="pf-name" readonly></div>
-                <div class="form-group"><label class="form-lbl">Email</label><input class="form-input" id="pf-email" readonly></div>
-                <div class="form-group"><label class="form-lbl">Phone</label><input class="form-input" id="pf-phone" readonly></div>
-                <div class="form-group"><label class="form-lbl">Date of Birth</label><input class="form-input" id="pf-dob" readonly></div>
-                <div class="form-group"><label class="form-lbl">Emergency Contact</label><input class="form-input" id="pf-emergency" readonly></div>
-                <div style="font-size:11.5px;color:var(--txt3);margin-top:6px">To update your details, contact staff at the front desk.</div>
+                <div class="card-title">My Profile</div><div class="card-sub">Update your account details</div>
+                <div class="form-group"><label class="form-lbl">Full Name</label><input class="form-input" id="pf-name"></div>
+                <div class="form-group"><label class="form-lbl">Email</label><input class="form-input" id="pf-email"  type="email" readonly></div>
+                <div class="form-group"><label class="form-lbl">Gender</label>
+                    <select class="form-input" id="pf-gender">
+                        <option value="">—</option>
+                        <option value="M">Male</option>
+                        <option value="F">Female</option>
+                    </select>
+                </div>
+                <div class="form-group"><label class="form-lbl">Phone</label><input class="form-input" id="pf-phone"></div>
+                <div class="form-group"><label class="form-lbl">Date of Birth</label><input class="form-input" id="pf-dob" type="date"></div>
+                <div class="form-group"><label class="form-lbl">Emergency Contact</label><input class="form-input" id="pf-emergency"></div>
+                <div id="pf-err" style="display:none;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.3);color:var(--red);padding:8px 12px;border-radius:8px;font-size:12.5px;margin-bottom:10px"></div>
+                <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px">
+                    <button class="btn-ghost" onclick="loadProfile()">Reset</button>
+                    <button class="btn-primary" id="pf-save" onclick="saveProfile()">Save Changes</button>
+                </div>
+            </div>
+            <div class="card" style="max-width:460px;margin-top:14px">
+                <div class="card-title">Change Password</div><div class="card-sub">Use a strong password — at least 6 characters</div>
+                <div class="form-group"><label class="form-lbl">Current Password</label><input class="form-input" id="pf-cur-pw" type="password" autocomplete="current-password"></div>
+                <div class="form-group"><label class="form-lbl">New Password</label><input class="form-input" id="pf-new-pw" type="password" autocomplete="new-password"></div>
+                <div id="pf-pw-err" style="display:none;background:rgba(255,80,80,.08);border:1px solid rgba(255,80,80,.3);color:var(--red);padding:8px 12px;border-radius:8px;font-size:12.5px;margin-bottom:10px"></div>
+                <div style="display:flex;justify-content:flex-end;margin-top:8px">
+                    <button class="btn-primary" id="pf-pw-btn" onclick="changeMyPassword()">Update Password</button>
+                </div>
             </div>
         </div>
     </div>
@@ -845,21 +872,41 @@
                 <div class="form-group"><label class="form-lbl">Start Date</label><input class="form-input" id="buy-start" type="date" readonly></div>
                 <div class="form-group"><label class="form-lbl">Expire Date</label><input class="form-input" id="buy-expire" type="date" readonly></div>
             </div>
-            <div id="khqr-box" style="display:none;margin-top:12px;border:1px solid var(--brd);border-radius:12px;overflow:hidden;background:var(--s2)">
-                <div style="height:44px;background:#e1232e;display:flex;align-items:center;padding:0 14px">
-                    <img src="assets/bakong/khqr-logo.svg" alt="KHQR" style="height:24px;width:auto">
+            <div id="khqr-box" style="display:none;margin-top:14px;border:1px solid var(--brd);border-radius:14px;overflow:hidden;background:var(--s2)">
+                <!-- 3-step flow indicator -->
+                <div class="khqr-flow" id="khqr-flow" style="margin:14px 14px 0">
+                    <div class="khqr-step is-done" data-step="1"><span class="khqr-step__num">1. </span><span>Plan selected</span></div>
+                    <div class="khqr-step is-active" data-step="2"><span class="khqr-step__num">2. </span><span>Scan KHQR</span></div>
+                    <div class="khqr-step" data-step="3"><span class="khqr-step__num">3. </span><span>Confirm payment</span></div>
                 </div>
-                <div style="display:flex;gap:14px;align-items:center;padding:14px">
-                    <img id="khqr-img" alt="Bakong KHQR" style="width:132px;height:132px;border-radius:8px;background:white;padding:6px">
-                    <div style="min-width:0;flex:1">
-                        <div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);font-weight:700">Bakong KHQR · 10 min</div>
-                        <div id="khqr-ref" style="font-size:13px;color:var(--txt);font-weight:700;margin-top:4px">—</div>
-                        <div id="khqr-md5" style="font-size:10.5px;color:var(--txt3);margin-top:3px;word-break:break-all">MD5: —</div>
+                <!-- KHQR header band -->
+                <div style="height:44px;background:#e1232e;display:flex;align-items:center;justify-content:space-between;padding:0 14px;margin-top:14px">
+                    <img src="assets/bakong/khqr-logo.svg" alt="KHQR" style="height:24px;width:auto">
+                    <span id="khqr-countdown" style="color:white;font-family:ui-monospace,monospace;font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums">10:00</span>
+                </div>
+                <!-- Centered QR with linear countdown bar -->
+                <div style="padding:22px 14px 16px;text-align:center">
+                    <div class="khqr-qr-frame">
+                        <img id="khqr-img" alt="Bakong KHQR" width="250px" height="250px">
+                    </div>
+                    <div class="khqr-progress-bar" id="khqr-frame" style="--khqr-progress:100">
+                        <div class="khqr-progress-bar__fill"></div>
+                    </div>
+                    <div style="margin-top:14px">
+                        <div id="khqr-ref" style="font-size:13.5px;color:var(--txt);font-weight:600">—</div>
                         <div id="khqr-exp" style="font-size:11.5px;color:var(--txt3);margin-top:4px">—</div>
-                        <textarea id="khqr-payload" readonly style="margin-top:8px;width:100%;height:52px;background:var(--s3);color:var(--txt2);border:1px solid var(--brd);border-radius:8px;padding:8px;font-size:10.5px;resize:none"></textarea>
                     </div>
                 </div>
-                <div style="font-size:11.5px;color:var(--txt3);padding:0 14px 14px">Scan with Bakong or a KHQR-supported banking app, then verify by MD5 before the 10-minute expiry.</div>
+                <!-- Collapsible technical details -->
+                <details style="border-top:1px solid var(--brd);padding:10px 14px 14px">
+                    <summary style="font-size:11.5px;color:var(--txt2);cursor:pointer;font-weight:500;list-style:none;display:flex;align-items:center;gap:6px">
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><polyline points="6 9 12 15 18 9"/></svg>
+                        Technical details
+                    </summary>
+                    <div id="khqr-md5" style="font-size:10.5px;color:var(--txt3);margin-top:8px;word-break:break-all">MD5: —</div>
+                    <textarea id="khqr-payload" readonly style="margin-top:8px;width:100%;height:52px;background:var(--s3);color:var(--txt2);border:1px solid var(--brd);border-radius:8px;padding:8px;font-size:10.5px;resize:none;font-family:ui-monospace,monospace"></textarea>
+                </details>
+                <div style="font-size:11.5px;color:var(--txt3);padding:0 14px 14px;line-height:1.5">Scan with Bakong or any KHQR-supported banking app. We'll auto-confirm by MD5 within seconds of your payment.</div>
             </div>
             <div id="khqr-status" class="payment-status">
                 <div class="payment-status-icon" id="khqr-status-icon"></div>
@@ -893,6 +940,35 @@ const fmtDate=d=>{if(!d)return'—';try{return new Date(d).toLocaleDateString('e
 const fmtTime=d=>{if(!d)return'—';try{return new Date(d).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'})}catch{return d;}};
 const fmtMoney=v=>'$'+Number(v||0).toFixed(2);
 let activeKhqrPaymentId=null, activePurchaseKind='Membership', activePurchaseContext=null, autoVerifyTimer=null, autoVerifyAttempts=0;
+let khqrCountdownTimer=null, khqrExpiresAtMs=0, khqrStartMs=0;
+function setKhqrStep(activeIdx, doneIdxs=[]){
+  document.querySelectorAll('#khqr-flow .khqr-step').forEach(s=>{
+    s.classList.remove('is-active','is-done');
+    const i=Number(s.dataset.step);
+    if(doneIdxs.includes(i)) s.classList.add('is-done');
+    else if(i===activeIdx) s.classList.add('is-active');
+  });
+}
+function stopKhqrCountdown(){if(khqrCountdownTimer){clearInterval(khqrCountdownTimer);khqrCountdownTimer=null;}}
+function startKhqrCountdown(expiresAtIso){
+  stopKhqrCountdown();
+  khqrExpiresAtMs=new Date(expiresAtIso).getTime();
+  khqrStartMs=Date.now();
+  const total=Math.max(1,khqrExpiresAtMs-khqrStartMs);
+  const tick=()=>{
+    const remaining=Math.max(0,khqrExpiresAtMs-Date.now());
+    const m=Math.floor(remaining/60000);
+    const s=Math.floor((remaining%60000)/1000);
+    const el=document.getElementById('khqr-countdown');
+    if(el) el.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const pct=Math.max(0,Math.min(100,Math.round((remaining/total)*100)));
+    const frame=document.getElementById('khqr-frame');
+    if(frame){frame.style.setProperty('--khqr-progress',pct);frame.classList.toggle('is-low',remaining<60000);}
+    if(remaining<=0) stopKhqrCountdown();
+  };
+  tick();
+  khqrCountdownTimer=setInterval(tick,1000);
+}
 function toast(msg,type='info',ms=3200){const w=document.getElementById('toast-wrap');const el=document.createElement('div');const icons={ok:'check',err:'x',info:'info',warn:'warning'};el.className=`toast ${type}`;el.innerHTML=`<div class="toast-icon">${GymIcons.svg(icons[type]||'info')}</div><span>${msg}</span>`;w.appendChild(el);setTimeout(()=>{el.style.opacity='0';el.style.transform='translateX(14px)';setTimeout(()=>el.remove(),250);},ms);}
 function logout(){['gympro-token','gympro-role','gympro-user','gympro-userid','gympro-roleid'].forEach(k=>localStorage.removeItem(k));location.href='home.html';}
 function showTab(id,btn){document.querySelectorAll('[id^="tab-"]').forEach(t=>t.style.display='none');document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));document.getElementById('tab-'+id).style.display='block';if(btn)btn.classList.add('active');({overview:loadOverview,memberships:loadMemberships,courses:loadCourses,orders:loadOrders,checkins:loadCheckins,profile:loadProfile})[id]?.();}
@@ -933,15 +1009,63 @@ function closeBuyModal(){stopAutoVerify();document.getElementById('buy-modal').c
 function recalcBuyDates(){setBuyDates(parseInt(document.getElementById('buy-duration')?.value||'1'));}
 function showBuyError(message){const errEl=document.getElementById('buy-err');errEl.textContent=message;errEl.style.display='block';}
 async function confirmBuyPlan(){const cid=await getClientId();const errEl=document.getElementById('buy-err');errEl.style.display='none';if(!cid){showBuyError('Could not find your member account. Contact staff.');return;}const btn=document.getElementById('buy-submit');btn.disabled=true;btn.textContent='Generating...';try{let p;if(activePurchaseKind==='Course'){p=await API('/payments/khqr/course',{method:'POST',body:JSON.stringify({clientId:cid,courseId:activePurchaseContext.courseId,currency:'USD'})});}else{p=await API('/payments/khqr/membership',{method:'POST',body:JSON.stringify({clientId:cid,planId:activePurchaseContext.planId,type:activePurchaseContext.type,price:Number(activePurchaseContext.price||0),startAt:new Date(document.getElementById('buy-start').value).toISOString(),expireAt:new Date(document.getElementById('buy-expire').value).toISOString(),currency:'USD'})});}activeKhqrPaymentId=p.paymentId;renderKhqrOrder(p);document.getElementById('buy-submit').style.display='none';document.getElementById('buy-orders').style.display='inline-flex';document.getElementById('buy-verify').style.display='inline-flex';toast('KHQR order generated. Auto-checking MD5.', 'ok');loadOrders();startAutoVerify();}catch(e){showBuyError(e.message);}finally{btn.disabled=false;if(btn.style.display!=='none')btn.textContent='Generate KHQR';}}
-function renderKhqrOrder(p){document.getElementById('khqr-img').src=p.qrImageDataUri||'';document.getElementById('khqr-ref').textContent=`Reference: ${p.reference||'—'} · ${fmtMoney(p.amount)}`;document.getElementById('khqr-md5').textContent=`MD5: ${p.md5Hash||'—'}`;document.getElementById('khqr-exp').textContent=`Expires: ${fmtDate(p.expiresAt)} ${fmtTime(p.expiresAt)}`;document.getElementById('khqr-payload').value=p.qrPayload||'';document.getElementById('khqr-box').style.display='block';setPurchaseStatus('KHQR generated. Auto-checking MD5 payment status.','info');}
-function stopAutoVerify(){if(autoVerifyTimer){clearInterval(autoVerifyTimer);autoVerifyTimer=null;}autoVerifyAttempts=0;}
+function renderKhqrOrder(p){document.getElementById('khqr-img').src=p.qrImageDataUri||'';document.getElementById('khqr-ref').textContent=`${p.reference||'—'} · ${fmtMoney(p.amount)}`;document.getElementById('khqr-md5').textContent=`MD5: ${p.md5Hash||'—'}`;document.getElementById('khqr-exp').textContent=`Expires ${fmtDate(p.expiresAt)} ${fmtTime(p.expiresAt)}`;document.getElementById('khqr-payload').value=p.qrPayload||'';document.getElementById('khqr-box').style.display='block';setPurchaseStatus('KHQR generated. Auto-checking MD5 payment status.','info');setKhqrStep(2,[1]);if(p.expiresAt)startKhqrCountdown(p.expiresAt);}
+function stopAutoVerify(){if(autoVerifyTimer){clearInterval(autoVerifyTimer);autoVerifyTimer=null;}autoVerifyAttempts=0;stopKhqrCountdown();}
 function startAutoVerify(){stopAutoVerify();autoVerifyTimer=setInterval(()=>verifyKhqrPayment(true),5000);setTimeout(()=>verifyKhqrPayment(true),1200);}
-async function verifyKhqrPayment(isAuto=false){if(!activeKhqrPaymentId){if(!isAuto)showBuyError('Generate KHQR first.');return;}const btn=document.getElementById('buy-verify');if(!isAuto){btn.disabled=true;btn.textContent='Verifying...';}document.getElementById('buy-err').style.display='none';try{const p=await API(`/payments/${activeKhqrPaymentId}/verify`,{method:'PATCH'});loadOrders();if(p.status==='Paid'){stopAutoVerify();const msg=activePurchaseKind==='Course'?'Payment verified. Course enrollment activated.':'Payment verified. Membership activated.';setPurchaseStatus(msg,'check','ok');toast(msg,'ok');loadMemberships();loadCourses();loadOverview();setTimeout(()=>closeBuyModal(),900);}else if(p.status==='Expired'){stopAutoVerify();setPurchaseStatus('Order expired. Generate a new KHQR code.','warning','warn');}else{autoVerifyAttempts++;setPurchaseStatus(`Auto-checking MD5 payment status. Attempt ${autoVerifyAttempts}.`,'info');if(autoVerifyAttempts>=120)stopAutoVerify();if(!isAuto)toast('Payment is still pending','info');}}catch(e){if(isAuto){setPurchaseStatus('Auto-check paused. Use Verify Payment to retry.','warning','warn');stopAutoVerify();}else{showBuyError(e.message);}}finally{if(!isAuto){btn.disabled=false;btn.textContent='Verify Payment';}}}
+async function verifyKhqrPayment(isAuto=false){if(!activeKhqrPaymentId){if(!isAuto)showBuyError('Generate KHQR first.');return;}const btn=document.getElementById('buy-verify');if(!isAuto){btn.disabled=true;btn.textContent='Verifying...';}document.getElementById('buy-err').style.display='none';try{const p=await API(`/payments/${activeKhqrPaymentId}/verify`,{method:'PATCH'});loadOrders();if(p.status==='Paid'){stopAutoVerify();setKhqrStep(3,[1,2,3]);const msg=activePurchaseKind==='Course'?'Payment verified. Course enrollment activated.':'Payment verified. Membership activated.';setPurchaseStatus(msg,'check','ok');toast(msg,'ok');loadMemberships();loadCourses();loadOverview();setTimeout(()=>closeBuyModal(),900);}else if(p.status==='Expired'){stopAutoVerify();setPurchaseStatus('Order expired. Generate a new KHQR code.','warning','warn');}else{autoVerifyAttempts++;setPurchaseStatus(`Auto-checking MD5 payment status. Attempt ${autoVerifyAttempts}.`,'info');if(autoVerifyAttempts>=120)stopAutoVerify();if(!isAuto)toast('Payment is still pending','info');}}catch(e){if(isAuto){setPurchaseStatus('Auto-check paused. Use Verify Payment to retry.','warning','warn');stopAutoVerify();}else{showBuyError(e.message);}}finally{if(!isAuto){btn.disabled=false;btn.textContent='Verify Payment';}}}
 async function loadOrders(){try{const orders=await API('/payments/my')||[];const tbody=document.getElementById('orders-tbody');if(!orders.length){tbody.innerHTML='<tr><td colspan="5" style="text-align:center;padding:28px;color:var(--txt3)">No orders yet.</td></tr>';return;}const badge=s=>s==='Paid'?'b-grn':s==='Pending'?'b-amb':s==='Expired'?'b-red':'b-muted';tbody.innerHTML=orders.map(o=>`<tr><td><div style="color:var(--txt);font-weight:600">${o.orderName||o.reference||'Order'}</div><div style="font-size:10.5px;color:var(--txt3);word-break:break-all">${o.reference||''}</div></td><td>${o.purpose||'—'}</td><td>${fmtMoney(o.amount)}</td><td><span class="badge ${badge(o.status)}">${o.status||'—'}</span></td><td>${fmtDate(o.createdAt)}</td></tr>`).join('');}catch(e){document.getElementById('orders-tbody').innerHTML=`<tr><td colspan="5" style="text-align:center;padding:24px;color:var(--red)">${e.message}</td></tr>`;}}
 async function loadCourses(){const cid=await getClientId();const CC=[['rgba(232,98,26,.15)','#e8621a'],['rgba(64,136,244,.15)','#4088f4'],['rgba(157,107,245,.15)','#9d6bf5'],['rgba(29,185,122,.15)','#1db97a']];try{if(cid){const enr=await API(`/enrollments?clientId=${cid}`)||[];document.getElementById('my-enrollments').innerHTML=enr.length?`<table><thead><tr><th>Course</th><th>Start</th><th>Expires</th><th>Paid</th></tr></thead><tbody>${enr.map(e=>`<tr><td style="color:var(--txt);font-weight:500">${e.courseName||'—'}</td><td>${fmtDate(e.startAt)}</td><td>${fmtDate(e.expireAt)}</td><td>${fmtMoney(e.amount)}</td></tr>`).join('')}</tbody></table>`:'<div style="color:var(--txt3);font-size:13px;padding:14px 0">Not enrolled in any courses yet. Browse below.</div>';}}catch(e){document.getElementById('my-enrollments').innerHTML=`<div style="display:flex;align-items:center;gap:8px;color:var(--red);font-size:12.5px;padding:10px 0">${GymIcons.svg('warning')}<span>${e.message}</span></div>`;}
 try{const json=await(await fetch('/api/public/courses')).json();const courses=json.data||json||[];document.getElementById('all-courses').innerHTML=courses.length?courses.map((c,i)=>{const[bg,fg]=CC[i%CC.length];const pct=Math.min(100,Math.round((c.enrollmentCount||0)/20*100));const data=JSON.stringify({courseId:c.courseId,name:c.courseName||'Course',price:Number(c.price||0)}).replace(/"/g,'&quot;');return`<div class="course-card" data-course-json="${data}" onclick="openCourseOrder(JSON.parse(this.dataset.courseJson))"><div class="cc-icon" style="background:${bg};color:${fg}">${GymIcons.svg('book')}</div><div class="cc-name">${c.courseName}</div><div class="cc-meta">${c.trainerName||'—'} · ${c.skillName||'—'}</div><div style="display:flex;align-items:center;justify-content:space-between"><div class="cc-price">${fmtMoney(c.price)}</div><span class="badge b-pur" style="font-size:10px">${c.enrollmentCount||0}/20</span></div><div class="prog"><div class="prog-fill" style="width:${pct}%;background:${fg}"></div></div></div>`;}).join(''):'<div style="color:var(--txt3);font-size:13px">No courses available.</div>';}catch(e){document.getElementById('all-courses').innerHTML=`<div style="display:flex;align-items:center;gap:8px;color:var(--red);font-size:12.5px">${GymIcons.svg('warning')}<span>${e.message}</span></div>`;}}
 async function loadCheckins(){const cid=await getClientId();if(!cid){document.getElementById('ci-tbody').innerHTML='<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">Member record not found.</td></tr>';return;}try{const list=await API(`/members/${cid}/checkins?days=30`)||[];document.getElementById('ci-tbody').innerHTML=list.length?list.map(c=>`<tr><td style="color:var(--txt)">${fmtDate(c.checkinDate)}</td><td style="color:var(--txt2)">${fmtTime(c.checkinDate)}</td><td>${fmtMoney(c.amount)}</td></tr>`).join(''):'<tr><td colspan="3" style="text-align:center;padding:28px;color:var(--txt3)">No check-ins in the last 30 days.</td></tr>';}catch(e){document.getElementById('ci-tbody').innerHTML=`<tr><td colspan="3" style="text-align:center;padding:24px;color:var(--red)"><span style="display:inline-flex;align-items:center;gap:8px">${GymIcons.svg('warning')}<span>${e.message}</span></span></td></tr>`;}}
-async function loadProfile(){const cid=await getClientId();if(!cid)return;try{const m=await API(`/members/${cid}`);if(!m)return;document.getElementById('pf-name').value=m.fullName||'';document.getElementById('pf-email').value=m.email||'';document.getElementById('pf-phone').value=m.phone||'';document.getElementById('pf-dob').value=m.dob?m.dob.split('T')[0]:'';document.getElementById('pf-emergency').value=m.emergencyContact||'';}catch(e){toast('Could not load profile','err');}}
+async function loadProfile(){
+  document.getElementById('pf-err').style.display='none';
+  try{
+    const me=await API('/members/me');
+    if(!me)return;
+    document.getElementById('pf-name').value=me.fullName||'';
+    document.getElementById('pf-email').value=me.email||'';
+    document.getElementById('pf-phone').value=me.phone||'';
+    document.getElementById('pf-dob').value=me.dob?me.dob.split('T')[0]:'';
+    document.getElementById('pf-emergency').value=me.emergencyContact||'';
+    // Gender lives on the User entity, not ClientDto — fetch via /users/{userId}
+    try{
+      const u=await API(`/users/${me.userId}`);
+      document.getElementById('pf-gender').value=u?.gender||'';
+    }catch(_){/* non-fatal */}
+  }catch(e){toast('Could not load profile','err');}
+}
+async function saveProfile(){
+  const err=document.getElementById('pf-err');err.style.display='none';
+  const btn=document.getElementById('pf-save');btn.disabled=true;btn.textContent='Saving…';
+  try{
+    const body={
+      fullName:document.getElementById('pf-name').value.trim(),
+      email:document.getElementById('pf-email').value.trim(),
+      gender:document.getElementById('pf-gender').value||null,
+      phone:document.getElementById('pf-phone').value.trim()||null,
+      dob:document.getElementById('pf-dob').value?new Date(document.getElementById('pf-dob').value).toISOString():null,
+      emergencyContact:document.getElementById('pf-emergency').value.trim()||null,
+    };
+    await API('/members/me',{method:'PUT',body:JSON.stringify(body)});
+    if(body.fullName){localStorage.setItem('gympro-user',body.fullName);document.getElementById('nav-name').textContent=body.fullName;document.getElementById('nav-av').textContent=ini(body.fullName);}
+    toast('Profile updated','ok');
+  }catch(e){err.textContent=e.message;err.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='Save Changes';}
+}
+async function changeMyPassword(){
+  const err=document.getElementById('pf-pw-err');err.style.display='none';
+  const cur=document.getElementById('pf-cur-pw').value;
+  const nw=document.getElementById('pf-new-pw').value;
+  if(!cur||!nw){err.textContent='Both fields are required.';err.style.display='block';return;}
+  if(nw.length<6){err.textContent='New password must be at least 6 characters.';err.style.display='block';return;}
+  const btn=document.getElementById('pf-pw-btn');btn.disabled=true;btn.textContent='Updating…';
+  try{
+    await API('/users/me/password',{method:'PATCH',body:JSON.stringify({currentPassword:cur,newPassword:nw})});
+    document.getElementById('pf-cur-pw').value='';document.getElementById('pf-new-pw').value='';
+    toast('Password updated','ok');
+  }catch(e){err.textContent=e.message;err.style.display='block';}
+  finally{btn.disabled=false;btn.textContent='Update Password';}
+}
 loadOverview();
     </script>
 

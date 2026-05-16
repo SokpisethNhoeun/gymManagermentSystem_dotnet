@@ -69,6 +69,8 @@ const Api = (() => {
     const getMembers = () => get('/members');
     const getMember = (id) => get(`/members/${id}`);
     const getMe = () => get('/members/me');
+    const updateMe = (b) => put('/members/me', b);
+    const promoteMember = (id, b) => post(`/members/${id}/promote`, b);
     const createMember = (b) => post('/members', b);
     const getMemberMemberships = (id) => get(`/members/${id}/memberships`);
     const getMemberCheckIns = (id) => get(`/members/${id}/checkins`);
@@ -80,6 +82,8 @@ const Api = (() => {
     const getTrainers = () => get('/trainers');
     const createTrainer = (b) => post('/trainers', b);
     const toggleTrainer = (id) => put(`/trainers/${id}/toggle`);  // [HttpPut]
+    const addTrainerSkill = (id, skillId) => post(`/trainers/${id}/skills`, { skillId });
+    const removeTrainerSkill = (id, skillId) => del(`/trainers/${id}/skills/${skillId}`);
 
     // ── Courses ──────────────────────────────────────────────────────────────
     // GET    /api/courses     → List<CourseDto>
@@ -138,13 +142,14 @@ const Api = (() => {
     const getUsers = () => get('/users');
     const createUser = (b) => post('/users', b);
     const resetPassword = (id, b) => patch(`/users/${id}/reset-password`, b);  // [HttpPatch]
+    const changeMyPassword = (b) => patch('/users/me/password', b);
 
     return {
         BASE_URL, getToken, setToken, clearToken, isAuth,
         get, post, put, patch, del,
         login, verifyOtp, logout, getStats,
-        getMembers, getMember, getMe, createMember, getMemberMemberships, getMemberCheckIns,
-        getTrainers, createTrainer, toggleTrainer,
+        getMembers, getMember, getMe, updateMe, promoteMember, createMember, getMemberMemberships, getMemberCheckIns,
+        getTrainers, createTrainer, toggleTrainer, addTrainerSkill, removeTrainerSkill,
         getCourses, createCourse, deactivateCourse,
         getMemberships, createMembership, deactivateMembership,
         getEnrollments, createEnrollment,
@@ -154,6 +159,6 @@ const Api = (() => {
         getMembershipPlans, createMembershipPlan, updateMembershipPlan, deleteMembershipPlan,
         getPayments, getMyPayments, createKhqrMembershipPayment, createKhqrCoursePayment, verifyPayment, confirmPayment,
         getPendingEnrollments, approveEnrollment,
-        getUsers, createUser, resetPassword,
+        getUsers, createUser, resetPassword, changeMyPassword,
     };
 })();

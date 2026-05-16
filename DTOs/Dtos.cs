@@ -43,6 +43,32 @@ public record UpdateUserRequest(
 
 public record ResetPasswordRequest([Required, MinLength(6)] string NewPassword);
 
+// ── SELF-PROFILE ──────────────────────────────────────────
+// PUT /api/members/me — clients update their own User + ClientDetail in one call
+public record UpdateMyProfileRequest(
+    [Required, MaxLength(100)] string FullName,
+    [Required, EmailAddress, MaxLength(100)] string Email,
+    [MaxLength(1)] string? Gender,
+    [MaxLength(50)] string? Phone,
+    DateTime? Dob,
+    [MaxLength(255)] string? EmergencyContact);
+
+public record ChangePasswordRequest(
+    [Required] string CurrentPassword,
+    [Required, MinLength(6)] string NewPassword);
+
+// POST /api/members/{id}/promote — Admin promotes a member to Trainer or Staff
+public record PromoteMemberRequest(
+    [Required, RegularExpression("Trainer|Staff", ErrorMessage = "Role must be Trainer or Staff.")] string Role,
+    List<int>? SkillIds,
+    [Range(0, 9999999)] decimal? Salary,
+    DateTime? Dob,
+    [MaxLength(100)] string? PlaceOfBirth,
+    [MaxLength(50)] string? Phone);
+
+// POST /api/trainers/{id}/skills — Admin adds a skill to an existing trainer
+public record AddTrainerSkillRequest([Range(1, int.MaxValue)] int SkillId);
+
 // ── STAFF ─────────────────────────────────────────────────
 public record StaffDto(int StaffId, int UserId, string FullName, string Email,
     string? Phone, string? PlaceOfBirth, DateTime? Dob, decimal Salary, bool IsActive);

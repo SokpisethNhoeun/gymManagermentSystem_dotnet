@@ -98,23 +98,26 @@
                 <!-- ══ DASHBOARD ══ -->
                 <div class="page" id="page-dashboard">
                     <div class="g4 mb20">
-                        <div class="stat-card" style="--clr:var(--accent)">
-                            <div class="stat-top"><div class="stat-icon" style="background:var(--glow);color:var(--accent)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg></div><div class="sparkline" style="width:50px"><div class="spark-bar" style="height:40%"></div><div class="spark-bar" style="height:55%"></div><div class="spark-bar" style="height:65%"></div><div class="spark-bar" style="height:70%"></div><div class="spark-bar" style="height:80%"></div><div class="spark-bar" style="height:88%"></div><div class="spark-bar" style="height:100%;opacity:1"></div></div></div>
-                            <div class="stat-val" id="stat-members">—</div><div class="stat-lbl">Total Members</div>
-                            <div class="stat-delta"><span class="badge b-green" style="font-size:10px">↑ 12%</span><span class="text-muted" style="font-size:11px">vs last month</span></div>
+                        <div class="stat-card" data-tone="accent">
+                            <div class="stat-top">
+                                <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ui-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /></svg></div>
+                                <div class="sparkline"><div class="spark-bar" style="height:40%"></div><div class="spark-bar" style="height:55%"></div><div class="spark-bar" style="height:65%"></div><div class="spark-bar" style="height:70%"></div><div class="spark-bar" style="height:80%"></div><div class="spark-bar" style="height:88%"></div><div class="spark-bar" style="height:100%;opacity:1"></div></div>
+                            </div>
+                            <div class="stat-val num" id="stat-members">—</div><div class="stat-lbl">Total members</div>
+                            <div class="stat-delta"><span class="chip chip--success">↑ 12%</span><span class="text-muted" style="font-size:11px">vs last month</span></div>
                         </div>
-                        <div class="stat-card" style="--clr:var(--green)">
-                            <div class="stat-top"><div class="stat-icon" style="background:var(--green-bg);color:var(--green)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></div><span class="badge b-green badge-dot">Live</span></div>
-                            <div class="stat-val" id="stat-checkins">—</div><div class="stat-lbl">Today's Check-ins</div>
-                            <div class="stat-delta"><span class="badge b-green" style="font-size:10px">Live</span></div>
+                        <div class="stat-card" data-tone="success">
+                            <div class="stat-top"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ui-icon"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg></div><span class="chip chip--success">Live</span></div>
+                            <div class="stat-val num" id="stat-checkins">—</div><div class="stat-lbl">Today's check-ins</div>
+                            <div class="stat-delta"><span class="text-muted" style="font-size:11px">Updating in real time</span></div>
                         </div>
-                        <div class="stat-card" style="--clr:var(--blue)">
-                            <div class="stat-top"><div class="stat-icon" style="background:var(--blue-bg);color:var(--blue)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px"><circle cx="12" cy="8" r="4" /><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg></div></div>
-                            <div class="stat-val" id="stat-trainers">—</div><div class="stat-lbl">Active Trainers</div>
+                        <div class="stat-card" data-tone="info">
+                            <div class="stat-top"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ui-icon"><circle cx="12" cy="8" r="4" /><path d="M6 20v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /></svg></div></div>
+                            <div class="stat-val num" id="stat-trainers">—</div><div class="stat-lbl">Active trainers</div>
                         </div>
-                        <div class="stat-card" style="--clr:var(--purple)">
-                            <div class="stat-top"><div class="stat-icon" style="background:var(--purple-bg);color:var(--purple)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="width:16px;height:16px"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg></div></div>
-                            <div class="stat-val" id="stat-memb">—</div><div class="stat-lbl">Active Memberships</div>
+                        <div class="stat-card" data-tone="purple">
+                            <div class="stat-top"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ui-icon"><rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" /></svg></div></div>
+                            <div class="stat-val num" id="stat-memb">—</div><div class="stat-lbl">Active memberships</div>
                         </div>
                     </div>
                     <div class="g-7-3 mb16">
@@ -145,6 +148,21 @@
                         <div class="card">
                             <div class="card-header"><div><div class="card-title">Course Payments</div><div class="card-sub">Courses activate after KHQR MD5 verification</div></div><span class="badge b-green badge-dot">Auto</span></div>
                             <div id="course-payment-flow" class="text-muted" style="font-size:12px;padding:16px">No manual course approval is required. Paid KHQR course orders create approved enrollments automatically.</div>
+                        </div>
+                    </div>
+                    <div class="g2" style="margin-top:16px">
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">Quick Actions</div><div class="card-sub">Admin shortcuts</div></div></div>
+                            <div style="display:flex;gap:8px;flex-wrap:wrap;padding:6px 0">
+                                <button class="btn btn-primary btn-sm" onclick="openOverlay('modal-overlay','skill-create-modal')">+ New Skill</button>
+                                <button class="btn btn-primary btn-sm" onclick="openDashPromoteModal()">Promote Member</button>
+                                <button class="btn btn-ghost btn-sm" onclick="navigate('trainers')">Manage Trainers</button>
+                                <button class="btn btn-ghost btn-sm" onclick="navigate('members')">Manage Members</button>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-header"><div><div class="card-title">Skill Catalog</div><div class="card-sub">Skills available for trainers</div></div><button class="btn btn-ghost btn-sm" onclick="loadSkillCatalog()">Refresh</button></div>
+                            <div id="dash-skills" class="text-muted" style="font-size:12.5px;padding:6px 0;display:flex;flex-wrap:wrap;gap:6px">Click Refresh to load…</div>
                         </div>
                     </div>
                 </div>
@@ -281,27 +299,48 @@
 
                 <!-- ══ PAYMENTS ══ -->
                 <div class="page" id="page-payments">
+                    <div class="page-head">
+                        <div>
+                            <div class="page-head__title">Payments</div>
+                            <div class="page-head__sub">Membership revenue and Bakong KHQR transactions</div>
+                        </div>
+                        <div class="page-head__actions">
+                            <button class="btn btn-ghost btn-sm" onclick="toast('Exporting…','info')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="ui-icon"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
+                        </div>
+                    </div>
                     <div class="g4 mb20">
-                        <div class="stat-card" style="--clr:var(--green)"><div class="stat-val text-green" id="pay-stat-month">—</div><div class="stat-lbl">This Month</div></div>
-                        <div class="stat-card" style="--clr:var(--blue)"><div class="stat-val" id="pay-stat-ytd">—</div><div class="stat-lbl">YTD Revenue</div></div>
-                        <div class="stat-card" style="--clr:var(--purple)"><div class="stat-val" id="pay-stat-active">—</div><div class="stat-lbl">Active Plans</div></div>
-                        <div class="stat-card" style="--clr:var(--accent)"><div class="stat-val" id="pay-stat-members">—</div><div class="stat-lbl">Total Members</div></div>
+                        <div class="stat-card" data-tone="success">
+                            <div class="stat-top"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ui-icon"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div></div>
+                            <div class="stat-val num" id="pay-stat-month">—</div><div class="stat-lbl">This month</div>
+                        </div>
+                        <div class="stat-card" data-tone="info">
+                            <div class="stat-top"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ui-icon"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div></div>
+                            <div class="stat-val num" id="pay-stat-ytd">—</div><div class="stat-lbl">YTD revenue</div>
+                        </div>
+                        <div class="stat-card" data-tone="purple">
+                            <div class="stat-top"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ui-icon"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg></div></div>
+                            <div class="stat-val num" id="pay-stat-active">—</div><div class="stat-lbl">Active plans</div>
+                        </div>
+                        <div class="stat-card" data-tone="accent">
+                            <div class="stat-top"><div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="ui-icon"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div>
+                            <div class="stat-val num" id="pay-stat-members">—</div><div class="stat-lbl">Total members</div>
+                        </div>
                     </div>
                     <div class="g-7-3">
                         <div class="card">
-                            <div class="card-header"><div><div class="card-title">Transactions</div><div class="card-sub">Membership revenue and Bakong KHQR intents</div></div><button class="btn btn-ghost btn-sm" onclick="toast('Exporting…','info')">Export</button></div>
+                            <div class="card-header"><div><div class="card-title">Transactions</div><div class="card-sub">Latest KHQR + membership payments</div></div><span class="chip chip--mute" id="pay-count">—</span></div>
                             <div class="table-wrap">
                                 <table>
-                                    <thead><tr><th>Reference</th><th>Purpose</th><th>Amount</th><th>Date</th><th>Status</th><th></th></tr></thead>
+                                    <thead><tr><th>Reference</th><th>Purpose</th><th class="num">Amount</th><th>Date</th><th>Status</th><th></th></tr></thead>
                                     <tbody id="pay-tbody"><tr><td colspan="6" class="text-muted" style="text-align:center;padding:32px">Loading…</td></tr></tbody>
                                 </table>
                             </div>
                         </div>
                         <div class="card">
-                            <div class="card-header"><div class="card-title">Revenue Split</div></div>
+                            <div class="card-header"><div class="card-title">Revenue split</div></div>
                             <div class="chart-box h200"><canvas id="chart-pay-split"></canvas></div>
                             <div class="divider"></div>
-                            <div class="card-header" style="margin-bottom:0"><div><div class="card-title">Monthly Trend</div></div></div>
+                            <div class="card-header" style="margin-bottom:0"><div><div class="card-title">Monthly trend</div></div></div>
                             <div class="chart-box h160" style="margin-top:12px"><canvas id="chart-rev-trend"></canvas></div>
                         </div>
                     </div>
@@ -462,9 +501,10 @@
                                     <div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="saveMyProfile()">Save Profile</button></div>
                                     <div style="height:1px;background:var(--brd);margin:20px 0"></div>
                                     <div class="card-title" style="font-size:13px;margin-bottom:12px">Change Password</div>
+                                    <div class="form-group" style="margin-bottom:12px"><label class="form-lbl">Current Password</label><input class="form-input" id="acc-cur-pw" type="password" autocomplete="current-password" placeholder="Enter current password"></div>
                                     <div class="form-grid">
-                                        <div class="form-group"><label class="form-lbl">New Password</label><input class="form-input" id="acc-new-pw" type="password" placeholder="Min 6 characters"></div>
-                                        <div class="form-group"><label class="form-lbl">Confirm Password</label><input class="form-input" id="acc-confirm-pw" type="password" placeholder="Repeat password"></div>
+                                        <div class="form-group"><label class="form-lbl">New Password</label><input class="form-input" id="acc-new-pw" type="password" autocomplete="new-password" placeholder="Min 6 characters"></div>
+                                        <div class="form-group"><label class="form-lbl">Confirm Password</label><input class="form-input" id="acc-confirm-pw" type="password" autocomplete="new-password" placeholder="Repeat password"></div>
                                     </div>
                                     <div style="margin-top:10px"><button class="btn btn-primary btn-sm" onclick="changeMyPassword()">Change Password</button></div>
                                 </div>
@@ -680,6 +720,109 @@
             <div class="modal-foot">
                 <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','staff-modal')">Cancel</button>
                 <button class="btn btn-primary" id="st-submit-btn" onclick="submitStaff()">Add Staff</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promote Member Modal — POST /api/members/{id}/promote -->
+    <div class="modal-wrap" id="promote-modal">
+        <div class="modal-box" style="width:480px">
+            <div class="modal-title">Promote Member</div>
+            <div class="modal-sub" id="pr-sub">Convert this member into a Trainer or Staff account.</div>
+            <div id="pr-err" style="display:none;background:var(--red-bg);color:var(--red);border:1px solid rgba(232,72,72,.25);border-radius:var(--r-sm);padding:9px 12px;font-size:12px;margin-bottom:12px"></div>
+            <input type="hidden" id="pr-client-id">
+            <div class="form-group">
+                <label class="form-lbl">Promote to *</label>
+                <select class="form-input" id="pr-role" onchange="onPromoteRoleChange()">
+                    <option value="Trainer">Trainer</option>
+                    <option value="Staff">Staff</option>
+                </select>
+            </div>
+            <div id="pr-trainer-fields">
+                <div class="form-group">
+                    <label class="form-lbl">Initial Skills</label>
+                    <select class="form-input" id="pr-skills" multiple size="4"></select>
+                    <div class="text-muted" style="font-size:11px;margin-top:4px">Hold Ctrl/Cmd to select multiple. Optional — you can add more later.</div>
+                </div>
+            </div>
+            <div id="pr-staff-fields" style="display:none">
+                <div class="form-grid">
+                    <div class="form-group"><label class="form-lbl">Salary (USD/mo)</label><input class="form-input" id="pr-salary" type="number" step="0.01" placeholder="300"></div>
+                    <div class="form-group"><label class="form-lbl">Place of Birth</label><input class="form-input" id="pr-place" placeholder="Phnom Penh"></div>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','promote-modal')">Cancel</button>
+                <button class="btn btn-primary" id="pr-submit-btn" onclick="submitPromote()">Promote</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Skill Modal — POST /api/skills -->
+    <div class="modal-wrap" id="skill-create-modal">
+        <div class="modal-box" style="width:420px">
+            <div class="modal-title">New Skill</div>
+            <div class="modal-sub">Add a skill to the catalog. Trainers can be assigned to it afterward.</div>
+            <div id="sc-err" style="display:none;background:var(--red-bg);color:var(--red);border:1px solid rgba(232,72,72,.25);border-radius:var(--r-sm);padding:9px 12px;font-size:12px;margin-bottom:12px"></div>
+            <div class="form-group"><label class="form-lbl">Skill Name *</label><input class="form-input" id="sc-name" placeholder="e.g. HIIT, Yoga, CrossFit" maxlength="50"></div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','skill-create-modal')">Cancel</button>
+                <button class="btn btn-primary" id="sc-submit-btn" onclick="submitCreateSkill()">Create Skill</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Promote (member picker) Modal — used from Dashboard Quick Actions -->
+    <div class="modal-wrap" id="promote-picker-modal">
+        <div class="modal-box" style="width:520px">
+            <div class="modal-title">Promote Member</div>
+            <div class="modal-sub">Pick an existing member and choose the new role.</div>
+            <div id="pp-err" style="display:none;background:var(--red-bg);color:var(--red);border:1px solid rgba(232,72,72,.25);border-radius:var(--r-sm);padding:9px 12px;font-size:12px;margin-bottom:12px"></div>
+            <div class="form-group">
+                <label class="form-lbl">Member *</label>
+                <select class="form-input" id="pp-client"><option value="">— select member —</option></select>
+            </div>
+            <div class="form-group">
+                <label class="form-lbl">Promote to *</label>
+                <select class="form-input" id="pp-role" onchange="onPickerRoleChange()">
+                    <option value="Trainer">Trainer</option>
+                    <option value="Staff">Staff</option>
+                </select>
+            </div>
+            <div id="pp-trainer-fields">
+                <div class="form-group">
+                    <label class="form-lbl">Initial Skills</label>
+                    <select class="form-input" id="pp-skills" multiple size="4"></select>
+                    <div class="text-muted" style="font-size:11px;margin-top:4px">Hold Ctrl/Cmd to select multiple. Optional.</div>
+                </div>
+            </div>
+            <div id="pp-staff-fields" style="display:none">
+                <div class="form-grid">
+                    <div class="form-group"><label class="form-lbl">Salary (USD/mo)</label><input class="form-input" id="pp-salary" type="number" step="0.01" placeholder="300"></div>
+                    <div class="form-group"><label class="form-lbl">Place of Birth</label><input class="form-input" id="pp-place" placeholder="Phnom Penh"></div>
+                </div>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','promote-picker-modal')">Cancel</button>
+                <button class="btn btn-primary" id="pp-submit-btn" onclick="submitPickerPromote()">Promote</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Skill to Trainer Modal — POST /api/trainers/{id}/skills -->
+    <div class="modal-wrap" id="add-skill-modal">
+        <div class="modal-box" style="width:440px">
+            <div class="modal-title">Add Skill</div>
+            <div class="modal-sub" id="as-sub">Assign an existing skill to this trainer.</div>
+            <div id="as-err" style="display:none;background:var(--red-bg);color:var(--red);border:1px solid rgba(232,72,72,.25);border-radius:var(--r-sm);padding:9px 12px;font-size:12px;margin-bottom:12px"></div>
+            <input type="hidden" id="as-trainer-id">
+            <div class="form-group">
+                <label class="form-lbl">Skill *</label>
+                <select class="form-input" id="as-skill"><option value="">— select skill —</option></select>
+            </div>
+            <div class="modal-foot">
+                <button class="btn btn-ghost" onclick="closeOverlay('modal-overlay','add-skill-modal')">Cancel</button>
+                <button class="btn btn-primary" id="as-submit-btn" onclick="submitAddSkill()">Add Skill</button>
             </div>
         </div>
     </div>
@@ -927,9 +1070,29 @@
             </div>
         </div>
     </div>
-    <script src="js/icons.js"></script>
-    <script src="js/api.js"></script>
-    <script src="js/app.js"></script>
+    <!-- ═══════════════ COMMAND PALETTE (⌘K) ═══════════════ -->
+    <div class="cmdk-backdrop" id="cmdk-backdrop" onclick="if(event.target===this)closeCmdk()">
+        <div class="cmdk" role="dialog" aria-modal="true" aria-label="Command palette">
+            <div class="cmdk-input-wrap">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input class="cmdk-input" id="cmdk-input" type="text" placeholder="Search members, trainers, courses, or jump to a page…" autocomplete="off">
+                <span class="kbd" style="background:var(--s3);padding:2px 6px;border-radius:4px;font-size:10.5px;color:var(--text3);font-family:ui-monospace,monospace">esc</span>
+            </div>
+            <div class="cmdk-list" id="cmdk-list">
+                <div class="cmdk-section">Suggestions</div>
+                <div class="cmdk-empty" id="cmdk-empty" style="display:none">No matches.</div>
+            </div>
+            <div class="cmdk-foot">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                <span><kbd>↵</kbd> select</span>
+                <span style="margin-left:auto"><kbd>esc</kbd> close</span>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/icons.js?v=2"></script>
+    <script src="js/api.js?v=2"></script>
+    <script src="js/app.js?v=2"></script>
     <script>
         // Catch any uncaught errors and show them visibly instead of silent failure
         window.addEventListener('error', function (e) {
